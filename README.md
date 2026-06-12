@@ -79,7 +79,7 @@
 ## Build / 构建
 
 ```bash
-git clone https://github.com/AutumnPants/powerpulse.git
+git clone https://github.com/777cola/PowerPulse.git
 cd powerpulse
 swift build -c release
 cp -r .build/release/PowerPulse PowerPulse.app
@@ -127,4 +127,4 @@ PowerPulse/
 
 ## License / 开源协议
 
-[MIT](LICENSE) © [AutumnPants](https://github.com/AutumnPants)
+[MIT](LICENSE) © [AutumnPants](https://github.com/777cola)
