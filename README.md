@@ -30,10 +30,17 @@
 ### Menu Bar / 菜单栏
 
 - Real-time wattage display with tabular (monospace) digits — no layout shift
-- Auto-switching icons: ⚡ Charging / 🔌 Plugged In / 🔋 On Battery
 - Battery percentage + mini battery icon
+- Color-coded status bar icon by power state:
 
-实时显示当前功率，等宽数字避免跳动。自动切换 ⚡🔌🔋 图标。
+| State | Color | Icon |
+|-------|-------|------|
+| Charging | 🟢 Green | Battery + ⚡ bolt |
+| Plugged in, not charging | 🟣 Purple | Battery only |
+| On battery (normal) | ⚪ White | Battery only |
+| On battery (< 15%) | 🔴 Red | Battery only |
+
+实时显示当前功率，等宽数字避免跳动。状态栏电池图标根据电源状态变色：充电中绿色（带闪电）、已接电源紫色、电池正常白色、低电量红色。
 
 ### Power Panel / 电源面板
 
