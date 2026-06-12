@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="https://777cola.github.io/PowerPulse/"><img src="https://img.shields.io/badge/Website-Live-blueviolet" alt="Website"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-6.3-orange" alt="Swift 6.3">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License: MIT">
-  <a href="https://777cola.github.io/PowerPulse/"><img src="https://img.shields.io/badge/Website-Live-blueviolet" alt="Website"></a>
 </p>
 
 ---
@@ -19,10 +19,6 @@
   <img src="screenshots/system-monitor.png" width="300" alt="System Monitor">
   &nbsp;&nbsp;
   <img src="screenshots/charging-history.png" width="300" alt="Charging History">
-</p>
-
-<p align="center">
-  🔗 <strong>Showcase Website / 展示网站：</strong><a href="https://777cola.github.io/PowerPulse/">777cola.github.io/PowerPulse</a>
 </p>
 
 ## Features / 功能特性
