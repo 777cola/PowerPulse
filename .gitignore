@@ -9,6 +9,10 @@ PowerPulse.app/
 xcuserdata/
 DerivedData/
 
+# Release artifacts
+*.dmg
+release_body.json
+
 # macOS
 .DS_Store
 *.swp
