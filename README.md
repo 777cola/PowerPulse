@@ -5,10 +5,13 @@
 </p>
 
 <p align="center">
-  <a href="https://777cola.github.io/PowerPulse/"><img src="https://img.shields.io/badge/Website-Live-blueviolet" alt="Website"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-6.3-orange" alt="Swift 6.3">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License: MIT">
+</p>
+
+<p align="center">
+  🌐 <a href="https://777cola.github.io/PowerPulse/"><strong>Live Website / 在线展示网站 →</strong></a>
 </p>
 
 ---
