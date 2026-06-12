@@ -83,21 +83,27 @@
 - macOS 14.0 (Sonoma) or later
 - Swift 6.3+ (Xcode 16+)
 
-## Build / 构建
+## Install / 安装（推荐）
+
+下载 `PowerPulse-Installer.dmg`，双击打开，将 PowerPulse 拖到 Applications 文件夹即可。
+
+![Install](https://img.shields.io/badge/Install-DMG-blueviolet)
+
+## Build from Source / 从源码构建
 
 ```bash
 git clone https://github.com/777cola/PowerPulse.git
 cd powerpulse
-swift build -c release
-cp -r .build/release/PowerPulse PowerPulse.app
-open PowerPulse.app
-```
-
-Or use the build script:
-
-```bash
 ./build_app.sh
 ```
+
+### Create DMG Installer / 创建安装包
+
+```bash
+./create_dmg.sh
+```
+
+Generates `PowerPulse-Installer.dmg` for distribution.
 
 ## Project Structure / 项目结构
 
