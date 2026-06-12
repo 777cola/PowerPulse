@@ -1,0 +1,15 @@
+# Build artifacts
+.build/
+PowerPulse.app/
+*.app/
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+*.swp
+*~
