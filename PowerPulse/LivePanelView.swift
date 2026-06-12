@@ -123,8 +123,8 @@ struct LivePanelView: View {
     private var batteryColor: Color {
         let flow = batteryMonitor.flowData
         if flow.isCharging { return .green }
-        if flow.batteryPercent <= 20 { return .red }
-        if flow.batteryPercent <= 50 { return .orange }
+        if flow.batteryPercent >= 100 && flow.isPluggedIn { return .purple }
+        if flow.batteryPercent <= 15 { return .red }
         return .primary
     }
     
