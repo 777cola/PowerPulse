@@ -1,0 +1,65 @@
+============================================
+  PowerPulse Installer
+  macOS Menu Bar Power & System Monitor
+============================================
+
+What is PowerPulse?
+-------------------
+PowerPulse is a macOS menu bar app that shows real-time power
+consumption, battery status, and system resource usage right
+in your menu bar.
+
+Features:
+  - Real-time wattage display in menu bar
+  - Battery percentage + mini battery icon
+  - Color-coded status by power state (charging/battery/low)
+  - CPU, GPU, and Memory monitoring
+  - Charging history with CSV export
+
+System Requirements:
+  - macOS 14.0 (Sonoma) or later
+  - Apple Silicon or Intel Mac
+
+How to Install:
+  1. Drag the PowerPulse icon to the Applications folder
+  2. Open PowerPulse from Launchpad or Applications folder
+  3. The app will appear in your menu bar (no Dock icon)
+
+Note: On first launch, macOS may show a security warning.
+Go to System Settings > Privacy & Security > click "Open Anyway".
+
+Homepage: https://777cola.github.io/PowerPulse/
+GitHub:   https://github.com/777cola/PowerPulse
+License:  MIT
+
+============================================
+  中文说明 / Chinese Instructions
+============================================
+
+PowerPulse 是什么？
+-------------------
+PowerPulse 是一款 macOS 菜单栏工具，可实时显示功耗、
+电池状态和系统资源使用情况。
+
+功能特性：
+  - 菜单栏实时瓦数显示
+  - 电池百分比 + 迷你电池图标
+  - 按电源状态颜色编码（充电/电池/低电量）
+  - CPU、GPU、内存 监控
+  - 充电历史记录，支持导出 CSV
+
+系统要求：
+  - macOS 14.0 (Sonoma) 或更高版本
+  - Apple Silicon 或 Intel Mac
+
+安装方法：
+  1. 将 PowerPulse 图标拖到 Applications 文件夹
+  2. 从启动台或应用程序文件夹打开 PowerPulse
+  3. 应用将显示在菜单栏中（不会出现在 Dock 栏）
+
+注意：首次打开时，macOS 可能会提示安全警告。
+前往 系统设置 > 隐私与安全性 > 点击"仍要打开"。
+
+项目主页：https://777cola.github.io/PowerPulse/
+GitHub：   https://github.com/777cola/PowerPulse
+开源协议： MIT
