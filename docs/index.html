@@ -1246,11 +1246,11 @@ footer a:hover { color: var(--text); }
   /* ── Hero ── */
   .hero { padding: 100px 16px 60px; min-height: auto; }
   .hero h1 { font-size: clamp(32px, 12vw, 48px); letter-spacing: -1.5px; }
-  .hero-sub { font-size: 15px; max-width: 100%; margin-bottom: 32px; }
-  .hero-badge { font-size: 10px; padding: 4px 12px; margin-bottom: 24px; }
+  .hero-sub { font-size: 16px; max-width: 100%; margin-bottom: 32px; }
+  .hero-badge { font-size: 11px; padding: 5px 14px; margin-bottom: 24px; }
   .hero-buttons { flex-direction: column; gap: 12px; width: 100%; max-width: 300px; }
   .hero-buttons .btn-primary,
-  .hero-buttons .btn-secondary { justify-content: center; width: 100%; }
+  .hero-buttons .btn-secondary { justify-content: center; width: 100%; font-size: 15px; padding: 14px 28px; }
   .hero-3d-container { width: 320px !important; height: 320px !important; opacity: 0.08; }
   .hero-3d-container canvas { width: 320px !important; height: 320px !important; }
   .menubar-preview { margin-top: 40px; transform: scale(0.85); transform-origin: center; }
@@ -1259,14 +1259,14 @@ footer a:hover { color: var(--text); }
   /* ── Sections general ── */
   section { padding: 60px 16px; }
   .section-title { font-size: clamp(24px, 7vw, 32px); letter-spacing: -1px; }
-  .section-desc { font-size: 15px; }
+  .section-desc { font-size: 16px; }
 
   /* ── Features ── */
   .features-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 32px; }
   .feature-card { padding: 24px; }
   .feature-icon { width: 40px; height: 40px; font-size: 18px; margin-bottom: 14px; }
   .feature-card h3 { font-size: 16px; }
-  .feature-card p { font-size: 13px; }
+  .feature-card p { font-size: 14px; }
 
   /* ── Power Flow ── */
   #powerflow { padding: 60px 0; }
@@ -1279,8 +1279,8 @@ footer a:hover { color: var(--text); }
   #colors [style*="margin-bottom:80px"] { margin-bottom: 40px !important; }
   .color-showcase { grid-template-columns: 1fr; gap: 12px; }
   .color-card { padding: 28px 20px 24px; }
-  .color-title { font-size: 15px; }
-  .color-desc { font-size: 12px; }
+  .color-title { font-size: 16px; }
+  .color-desc { font-size: 13px; }
   .color-orb-wrap { width: 80px; height: 80px; }
 
   /* ── System Monitor ── */
@@ -1288,8 +1288,8 @@ footer a:hover { color: var(--text); }
   .metric-card { padding: 24px; }
   .metric-ring { width: 90px; height: 90px; }
   .metric-value { font-size: 22px; }
-  .metric-label { font-size: 13px; }
-  .metric-sub { font-size: 10px; }
+  .metric-label { font-size: 14px; }
+  .metric-sub { font-size: 11px; }
 
   /* ── History ── */
   #history .history-section { gap: 24px; }
@@ -1298,14 +1298,15 @@ footer a:hover { color: var(--text); }
 
   /* ── Tech ── */
   .tech-grid { gap: 10px; margin-top: 28px; }
-  .tech-tag { font-size: 11px; padding: 8px 16px; }
+  .tech-tag { font-size: 12px; padding: 8px 16px; }
 
   /* ── CTA ── */
   .cta-box { padding: 36px 20px; }
   .cta-box h2 { font-size: 24px; }
-  .cta-box p { font-size: 14px; }
+  .cta-box p { font-size: 15px; }
+  .cta-box .btn-primary { font-size: 15px; padding: 14px 32px; }
   .cta-requirements { flex-direction: column; gap: 8px; align-items: center; }
-  .cta-requirements span { font-size: 11px; }
+  .cta-requirements span { font-size: 12px; }
 
   /* ── Footer ── */
   footer { flex-direction: column; gap: 12px; padding: 24px 16px; text-align: center; }
@@ -1322,12 +1323,17 @@ footer a:hover { color: var(--text); }
 @media (max-width: 420px) {
   .hero { padding: 80px 12px 40px; }
   .hero h1 { font-size: 28px; }
+  .hero-sub { font-size: 15px; }
   .hero-3d-container { width: 200px !important; height: 200px !important; }
   .hero-3d-container canvas { width: 200px !important; height: 200px !important; opacity: 0.5; }
   .menubar-preview { transform: scale(0.7); margin-top: 24px; }
   .hero-buttons { max-width: 100%; }
   section { padding: 40px 12px; }
+  .section-desc { font-size: 15px; }
+  .feature-card p { font-size: 13px; }
+  .color-desc { font-size: 12px; }
   .cta-box { padding: 28px 16px; }
+  .cta-box p { font-size: 14px; }
   .nav-mobile-menu { padding: 72px 16px 16px; }
 }
 
