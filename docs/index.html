@@ -157,42 +157,69 @@ nav {
 }
 
 /* ═══════════════════════════════════════════
-   THEME & LANGUAGE TOGGLES
+   THEME & LANGUAGE TOGGLES — 连体药丸
    ═══════════════════════════════════════════ */
 .nav-toggles {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 3px;
+  backdrop-filter: blur(10px);
 }
 
 .theme-btn, .lang-btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  color: var(--text-dim);
-  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  border-radius: 10px;
+  transition: color 0.35s, background 0.35s;
+  line-height: 1;
 }
 
-.theme-btn { font-size: 18px; min-width: 36px; }
-.lang-btn { font-size: 12px; font-weight: 700; min-width: 32px; letter-spacing: 0.5px; }
+.theme-btn {
+  font-size: 16px;
+  min-width: 34px;
+  height: 30px;
+  padding: 0 6px;
+}
+
+.lang-btn {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  font-family: var(--font);
+}
 
 .theme-btn:hover, .lang-btn:hover {
-  background: var(--bg-card);
   color: var(--text);
-  border-color: rgba(128,128,128,0.2);
+  background: rgba(128,128,128,0.08);
+}
+
+.theme-btn.active, .lang-btn.active {
+  color: var(--text);
+  background: rgba(128,128,128,0.12);
 }
 
 .theme-btn .icon-active { display: inline; }
 .theme-btn .icon-inactive { display: none; }
 [data-theme="light"] .theme-btn .icon-active { display: none; }
 [data-theme="light"] .theme-btn .icon-inactive { display: inline; }
+
+@media (max-width: 900px) {
+  .nav-toggles { gap: 0; }
+  .theme-btn, .lang-btn { min-width: 28px; height: 28px; font-size: 10px; }
+  .theme-btn { font-size: 14px; }
+}
 
 /* ═══════════════════════════════════════════
    HERO SECTION
@@ -1655,6 +1682,17 @@ footer a:hover { color: var(--text); }
   const particles = new THREE.Points(particleGeo, particleMat);
   scene.add(particles);
 
+  // Theme-aware battery body
+  function applyThemeToBattery() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    bodyMat.color.setHex(isLight ? 0xd4d4dc : 0x1a1a2e);
+    bodyMat.opacity = isLight ? 0.5 : 0.9;
+  }
+  applyThemeToBattery();
+  new MutationObserver(() => applyThemeToBattery()).observe(
+    document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }
+  );
+
   // Animate
   function animate() {
     requestAnimationFrame(animate);
@@ -2469,10 +2507,8 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
       }
     });
     localStorage.setItem(LANG_KEY, lang);
-    /* highlight active lang button */
     document.querySelectorAll('.lang-btn').forEach(btn => {
-      btn.style.borderColor = btn.dataset.lang === lang ? 'var(--accent-blue)' : 'var(--border)';
-      btn.style.color = btn.dataset.lang === lang ? 'var(--accent-blue)' : '';
+      btn.classList.toggle('active', btn.dataset.lang === lang);
     });
   }
 
@@ -2485,6 +2521,7 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
   });
 
 })();
+
 </script>
 
 <!-- GSAP ScrollTo plugin -->
