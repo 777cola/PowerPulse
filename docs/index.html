@@ -1161,6 +1161,177 @@ footer a:hover { color: var(--text); }
 }
 
 /* ═══════════════════════════════════════════
+   HAMBURGER
+   ═══════════════════════════════════════════ */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 6px;
+  transition: color 0.35s, background 0.35s;
+}
+.hamburger:hover { background: var(--bg-card); }
+.hamburger span {
+  display: block;
+  height: 1.5px;
+  background: var(--text-dim);
+  border-radius: 1px;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.nav-open .hamburger span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.nav-open .hamburger span:nth-child(2) { opacity: 0; }
+.nav-open .hamburger span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+/* ── Mobile nav overlay ── */
+.nav-mobile-menu {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 99;
+  background: var(--bg);
+  padding: 80px 24px 24px;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+.nav-open .nav-mobile-menu { display: flex; }
+.nav-mobile-menu a {
+  display: block;
+  padding: 14px 16px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: 500;
+  border-radius: 12px;
+  transition: background 0.25s;
+}
+.nav-mobile-menu a:hover { background: var(--bg-card); }
+.nav-mobile-menu .nav-cta-mobile {
+  margin-top: 8px;
+  text-align: center;
+  background: var(--accent-blue);
+  color: #fff !important;
+  font-weight: 600;
+}
+.nav-mobile-menu .nav-cta-mobile:hover { opacity: 0.9; }
+.nav-mobile-menu .lang-mobile-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 24px;
+  padding: 0 16px;
+}
+.nav-mobile-menu .lang-mobile-row .lang-btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE LAYOUT
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Nav ── */
+  .hamburger { display: flex; }
+  .nav-links { display: none; }
+  #lang-toggle { display: none; }
+  nav { padding: 10px 16px; }
+
+  /* ── Hero ── */
+  .hero { padding: 100px 16px 60px; min-height: auto; }
+  .hero h1 { font-size: clamp(32px, 12vw, 48px); letter-spacing: -1.5px; }
+  .hero-sub { font-size: 15px; max-width: 100%; margin-bottom: 32px; }
+  .hero-badge { font-size: 10px; padding: 4px 12px; margin-bottom: 24px; }
+  .hero-buttons { flex-direction: column; gap: 12px; width: 100%; max-width: 300px; }
+  .hero-buttons .btn-primary,
+  .hero-buttons .btn-secondary { justify-content: center; width: 100%; }
+  .hero-3d-container { width: 320px !important; height: 320px !important; opacity: 0.08; }
+  .hero-3d-container canvas { width: 320px !important; height: 320px !important; }
+  .menubar-preview { margin-top: 40px; transform: scale(0.85); transform-origin: center; }
+  .menubar-frame { transform: rotateX(0deg); }
+
+  /* ── Sections general ── */
+  section { padding: 60px 16px; }
+  .section-title { font-size: clamp(24px, 7vw, 32px); letter-spacing: -1px; }
+  .section-desc { font-size: 15px; }
+
+  /* ── Features ── */
+  .features-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 32px; }
+  .feature-card { padding: 24px; }
+  .feature-icon { width: 40px; height: 40px; font-size: 18px; margin-bottom: 14px; }
+  .feature-card h3 { font-size: 16px; }
+  .feature-card p { font-size: 13px; }
+
+  /* ── Power Flow ── */
+  #powerflow { padding: 60px 0; }
+  #powerflow .powerflow-section { gap: 24px; padding: 0 16px; }
+  .powerflow-visual { height: 280px; }
+  .flow-3d-card { transform: rotateY(0deg) rotateX(0deg); }
+
+  /* ── Colors ── */
+  #colors { padding: 60px 16px !important; }
+  #colors [style*="margin-bottom:80px"] { margin-bottom: 40px !important; }
+  .color-showcase { grid-template-columns: 1fr; gap: 12px; }
+  .color-card { padding: 28px 20px 24px; }
+  .color-title { font-size: 15px; }
+  .color-desc { font-size: 12px; }
+  .color-orb-wrap { width: 80px; height: 80px; }
+
+  /* ── System Monitor ── */
+  .sysmon-visual { gap: 12px; }
+  .metric-card { padding: 24px; }
+  .metric-ring { width: 90px; height: 90px; }
+  .metric-value { font-size: 22px; }
+  .metric-label { font-size: 13px; }
+  .metric-sub { font-size: 10px; }
+
+  /* ── History ── */
+  #history .history-section { gap: 24px; }
+  .history-3d-card { transform: rotateY(0deg) rotateX(0deg); padding: 20px; }
+  .history-bars { height: 120px; }
+
+  /* ── Tech ── */
+  .tech-grid { gap: 10px; margin-top: 28px; }
+  .tech-tag { font-size: 11px; padding: 8px 16px; }
+
+  /* ── CTA ── */
+  .cta-box { padding: 36px 20px; }
+  .cta-box h2 { font-size: 24px; }
+  .cta-box p { font-size: 14px; }
+  .cta-requirements { flex-direction: column; gap: 8px; align-items: center; }
+  .cta-requirements span { font-size: 11px; }
+
+  /* ── Footer ── */
+  footer { flex-direction: column; gap: 12px; padding: 24px 16px; text-align: center; }
+  footer div { gap: 16px; }
+
+  /* ── Grid bg ── */
+  .grid-bg { background-size: 40px 40px; }
+
+  /* ── Power flow stats inline ── */
+  #powerflow [style*="margin-top:32px"] { flex-wrap: wrap; gap: 16px !important; }
+  #powerflow [style*="margin-top:32px"] > div { flex: 1; min-width: 80px; }
+}
+
+@media (max-width: 420px) {
+  .hero { padding: 80px 12px 40px; }
+  .hero h1 { font-size: 28px; }
+  .hero-3d-container { width: 200px !important; height: 200px !important; }
+  .hero-3d-container canvas { width: 200px !important; height: 200px !important; opacity: 0.5; }
+  .menubar-preview { transform: scale(0.7); margin-top: 24px; }
+  .hero-buttons { max-width: 100%; }
+  section { padding: 40px 12px; }
+  .cta-box { padding: 28px 16px; }
+  .nav-mobile-menu { padding: 72px 16px 16px; }
+}
+
+/* ═══════════════════════════════════════════
    SCROLLBAR
    ═══════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 6px; }
@@ -1220,6 +1391,22 @@ footer a:hover { color: var(--text); }
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3.2" stroke="currentColor" stroke-width="1.3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       </span>
     </button>
+    <button class="hamburger" id="hamburger" aria-label="菜单">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <!-- Mobile nav menu -->
+  <div class="nav-mobile-menu">
+    <a href="#features">功能</a>
+    <a href="#colors">状态色彩</a>
+    <a href="#powerflow">功率流</a>
+    <a href="#monitor">系统监控</a>
+    <a href="#download" class="nav-cta-mobile">下载</a>
+    <div class="lang-mobile-row">
+      <button class="lang-btn active" data-lang="zh">简</button>
+      <button class="lang-btn" data-lang="hant">繁</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
   </div>
 </nav>
 
@@ -2542,6 +2729,12 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.lang === lang);
     });
+    /* Also update mobile menu lang button text */
+    document.querySelectorAll('.lang-mobile-row .lang-btn').forEach(btn => {
+      if (btn.dataset.lang === 'zh') btn.textContent = '简';
+      else if (btn.dataset.lang === 'hant') btn.textContent = '繁';
+      else btn.textContent = 'EN';
+    });
   }
 
   /* init */
@@ -2554,6 +2747,36 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
 
 })();
 
+/* ═══════════════════════════════════════════
+   HAMBURGER MENU
+   ═══════════════════════════════════════════ */
+(function() {
+  const nav = document.querySelector('nav');
+  const ham = document.getElementById('hamburger');
+  const menu = document.querySelector('.nav-mobile-menu');
+  if (!ham || !menu) return;
+
+  ham.addEventListener('click', () => {
+    nav.classList.toggle('nav-open');
+    document.body.style.overflow = nav.classList.contains('nav-open') ? 'hidden' : '';
+  });
+
+  /* Close on link click */
+  menu.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      nav.classList.remove('nav-open');
+      document.body.style.overflow = '';
+    });
+  });
+
+  /* Close on overlay background tap */
+  menu.addEventListener('click', e => {
+    if (e.target === menu) {
+      nav.classList.remove('nav-open');
+      document.body.style.overflow = '';
+    }
+  });
+})();
 </script>
 
 <!-- GSAP ScrollTo plugin -->
