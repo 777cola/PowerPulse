@@ -157,68 +157,94 @@ nav {
 }
 
 /* ═══════════════════════════════════════════
-   THEME & LANGUAGE TOGGLES — 连体药丸
+   THEME TOGGLE
    ═══════════════════════════════════════════ */
-.nav-toggles {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 3px;
-  backdrop-filter: blur(10px);
-}
-
-.theme-btn, .lang-btn {
+.theme-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 34px;
+  height: 30px;
   background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--text-dim);
+  border: 1px solid var(--border);
   border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-dim);
   transition: color 0.35s, background 0.35s;
   line-height: 1;
 }
-
-.theme-btn {
-  font-size: 16px;
-  min-width: 34px;
-  height: 30px;
-  padding: 0 6px;
-}
-
-.lang-btn {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 6px;
-  font-family: var(--font);
-}
-
-.theme-btn:hover, .lang-btn:hover {
-  color: var(--text);
-  background: rgba(128,128,128,0.08);
-}
-
-.theme-btn.active, .lang-btn.active {
-  color: var(--text);
-  background: rgba(128,128,128,0.12);
-}
+.theme-btn:hover { color: var(--text); background: var(--bg-card); }
 
 .theme-btn .icon-active { display: inline; }
 .theme-btn .icon-inactive { display: none; }
 [data-theme="light"] .theme-btn .icon-active { display: none; }
 [data-theme="light"] .theme-btn .icon-inactive { display: inline; }
 
+/* ═══════════════════════════════════════════
+   LANGUAGE TOGGLE — 仿网站中枢 ExpandableTabs
+   ═══════════════════════════════════════════ */
+#lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 3px;
+  backdrop-filter: blur(10px);
+}
+#lang-toggle .lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: transparent;
+  border: none;
+  font-family: var(--font);
+  font-size: .8rem;
+  font-weight: 400;
+  letter-spacing: .04em;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: .4rem .5rem;
+  border-radius: 10px;
+  white-space: nowrap;
+  transition: color .35s, background .35s;
+  line-height: 1;
+}
+#lang-toggle .lang-btn .abbr { display: inline-block; flex-shrink: 0; }
+#lang-toggle .lang-btn .full-wrap {
+  display: grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns .45s cubic-bezier(.22,1,.36,1);
+}
+#lang-toggle .lang-btn.active .full-wrap { grid-template-columns: 1fr; }
+#lang-toggle .lang-btn .full {
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .25s .12s;
+  padding-left: 0;
+}
+#lang-toggle .lang-btn.active .full {
+  opacity: 1;
+  padding-left: 6px;
+}
+#lang-toggle .lang-btn.active {
+  color: var(--text);
+  background: rgba(128,128,128,0.12);
+  padding: .4rem .75rem;
+}
+#lang-toggle .lang-btn:not(.active):hover {
+  color: var(--text);
+  background: rgba(128,128,128,0.08);
+}
+
 @media (max-width: 900px) {
-  .nav-toggles { gap: 0; }
-  .theme-btn, .lang-btn { min-width: 28px; height: 28px; font-size: 10px; }
-  .theme-btn { font-size: 14px; }
+  .theme-btn { width: 30px; height: 28px; font-size: 14px; }
+  #lang-toggle { padding: 2px; border-radius: 10px; }
+  #lang-toggle .lang-btn { font-size: .65rem; padding: .25rem .35rem; border-radius: 8px; }
+  #lang-toggle .lang-btn.active { padding: .25rem .5rem; }
 }
 
 /* ═══════════════════════════════════════════
@@ -1180,14 +1206,16 @@ footer a:hover { color: var(--text); }
     <li><a href="#monitor">系统监控</a></li>
     <li><a href="#download" class="nav-cta">下载</a></li>
   </ul>
-  <div class="nav-toggles">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div id="lang-toggle">
+      <button class="lang-btn active" data-lang="zh"><span class="abbr">简</span><span class="full-wrap"><span class="full">简体中文</span></span></button>
+      <button class="lang-btn" data-lang="hant"><span class="abbr">繁</span><span class="full-wrap"><span class="full">繁體中文</span></span></button>
+      <button class="lang-btn" data-lang="en"><span class="abbr">EN</span><span class="full-wrap"><span class="full">English</span></span></button>
+    </div>
     <button class="theme-btn" id="theme-toggle" aria-label="切换主题">
       <span class="icon-active">🌙</span>
       <span class="icon-inactive">☀️</span>
     </button>
-    <button class="lang-btn" id="lang-zh" data-lang="zh" title="中文">中</button>
-    <button class="lang-btn" id="lang-en" data-lang="en" title="English">EN</button>
-    <button class="lang-btn" id="lang-hant" data-lang="hant" title="繁體中文">繁</button>
   </div>
 </nav>
 
