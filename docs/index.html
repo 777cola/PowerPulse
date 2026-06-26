@@ -11,8 +11,12 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
+  /* ── Dark (default) ── */
   --bg: #050508;
   --bg-card: rgba(255,255,255,0.03);
+  --bg-raised: rgba(15,15,20,0.8);
+  --bg-nav: rgba(5,5,8,0.6);
+  --bg-menubar: rgba(30,30,35,0.9);
   --border: rgba(255,255,255,0.06);
   --text: #e8e8ec;
   --text-dim: rgba(255,255,255,0.45);
@@ -23,8 +27,39 @@
   --accent-purple: #a855f7;
   --glow-blue: rgba(59,130,246,0.35);
   --glow-green: rgba(34,197,94,0.3);
+  --grid-line: rgba(255,255,255,0.02);
+  --scrollbar-thumb: rgba(255,255,255,0.1);
+  --scrollbar-thumb-hover: rgba(255,255,255,0.2);
+  --hero-grad: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 50%, var(--accent-blue) 100%);
+  --card-edge: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  --toggle-icon: #f59e0b;
   --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
   --mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+/* ── Light theme ── */
+[data-theme="light"] {
+  --bg: #f4f4f7;
+  --bg-card: rgba(0,0,0,0.02);
+  --bg-raised: rgba(255,255,255,0.85);
+  --bg-nav: rgba(244,244,247,0.75);
+  --bg-menubar: rgba(235,235,240,0.95);
+  --border: rgba(0,0,0,0.08);
+  --text: #1a1a24;
+  --text-dim: rgba(0,0,0,0.45);
+  --accent-blue: #3b82f6;
+  --accent-green: #16a34a;
+  --accent-orange: #d97706;
+  --accent-cyan: #0891b2;
+  --accent-purple: #9333ea;
+  --glow-blue: rgba(59,130,246,0.2);
+  --glow-green: rgba(22,163,74,0.2);
+  --grid-line: rgba(0,0,0,0.04);
+  --scrollbar-thumb: rgba(0,0,0,0.15);
+  --scrollbar-thumb-hover: rgba(0,0,0,0.25);
+  --hero-grad: linear-gradient(135deg, #1a1a24 0%, rgba(26,26,36,0.6) 50%, var(--accent-blue) 100%);
+  --card-edge: linear-gradient(90deg, transparent, rgba(0,0,0,0.06), transparent);
+  --toggle-icon: #3b82f6;
 }
 
 html {
@@ -69,7 +104,7 @@ nav {
   justify-content: space-between;
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  background: rgba(5,5,8,0.6);
+  background: var(--bg-nav);
   border-bottom: 1px solid var(--border);
   transform: translateY(-100%);
 }
@@ -122,6 +157,44 @@ nav {
 }
 
 /* ═══════════════════════════════════════════
+   THEME & LANGUAGE TOGGLES
+   ═══════════════════════════════════════════ */
+.nav-toggles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.theme-btn, .lang-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-dim);
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-btn { font-size: 18px; min-width: 36px; }
+.lang-btn { font-size: 12px; font-weight: 700; min-width: 32px; letter-spacing: 0.5px; }
+
+.theme-btn:hover, .lang-btn:hover {
+  background: var(--bg-card);
+  color: var(--text);
+  border-color: rgba(128,128,128,0.2);
+}
+
+.theme-btn .icon-active { display: inline; }
+.theme-btn .icon-inactive { display: none; }
+[data-theme="light"] .theme-btn .icon-active { display: none; }
+[data-theme="light"] .theme-btn .icon-inactive { display: inline; }
+
+/* ═══════════════════════════════════════════
    HERO SECTION
    ═══════════════════════════════════════════ */
 .hero {
@@ -169,7 +242,7 @@ nav {
   font-weight: 800;
   letter-spacing: -3px;
   line-height: 1.05;
-  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 50%, var(--accent-blue) 100%);
+  background: var(--hero-grad);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -275,8 +348,8 @@ nav {
   align-items: center;
   gap: 16px;
   padding: 10px 24px;
-  background: rgba(30,30,35,0.9);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--bg-menubar);
+  border: 1px solid var(--border);
   border-radius: 10px;
   backdrop-filter: blur(30px);
   font-family: var(--mono);
@@ -408,7 +481,7 @@ section {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background: var(--card-edge);
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -470,7 +543,7 @@ section {
 .flow-3d-card {
   width: 100%;
   height: 100%;
-  background: rgba(15,15,20,0.8);
+  background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: 20px;
   overflow: hidden;
@@ -547,7 +620,7 @@ section {
 }
 
 .metric-ring .ring-bg {
-  stroke: rgba(255,255,255,0.06);
+  stroke: var(--border);
 }
 
 .metric-ring .ring-fill {
@@ -594,7 +667,7 @@ section {
 }
 
 .history-3d-card {
-  background: rgba(15,15,20,0.8);
+  background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 28px;
@@ -710,7 +783,7 @@ section {
 .cta-box {
   position: relative;
   padding: 64px 48px;
-  background: rgba(15,15,20,0.6);
+  background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: 24px;
   backdrop-filter: blur(20px);
@@ -798,7 +871,7 @@ footer a:hover { color: var(--text); }
 .color-card {
   position: relative;
   padding: 40px 24px 32px;
-  background: rgba(10,10,15,0.7);
+  background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: 20px;
   text-align: center;
@@ -1039,8 +1112,8 @@ footer a:hover { color: var(--text); }
    ═══════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* ═══════════════════════════════════════════
    MAGNETIC GRID BG
@@ -1051,8 +1124,8 @@ footer a:hover { color: var(--text); }
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 60px 60px;
   mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black, transparent);
   -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black, transparent);
@@ -1080,6 +1153,15 @@ footer a:hover { color: var(--text); }
     <li><a href="#monitor">系统监控</a></li>
     <li><a href="#download" class="nav-cta">下载</a></li>
   </ul>
+  <div class="nav-toggles">
+    <button class="theme-btn" id="theme-toggle" aria-label="切换主题">
+      <span class="icon-active">🌙</span>
+      <span class="icon-inactive">☀️</span>
+    </button>
+    <button class="lang-btn" id="lang-zh" data-lang="zh" title="中文">中</button>
+    <button class="lang-btn" id="lang-en" data-lang="en" title="English">EN</button>
+    <button class="lang-btn" id="lang-hant" data-lang="hant" title="繁體中文">繁</button>
+  </div>
 </nav>
 
 <!-- ════════════════════════════════════════
@@ -2104,6 +2186,305 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
     }
   });
 });
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE
+   ═══════════════════════════════════════════ */
+(function() {
+  const html = document.documentElement;
+  const btn = document.getElementById('theme-toggle');
+  const stored = localStorage.getItem('pp-theme');
+  if (stored === 'light') html.setAttribute('data-theme', 'light');
+  btn.addEventListener('click', () => {
+    const isLight = html.getAttribute('data-theme') === 'light';
+    html.setAttribute('data-theme', isLight ? '' : 'light');
+    localStorage.setItem('pp-theme', isLight ? '' : 'light');
+  });
+})();
+
+/* ═══════════════════════════════════════════
+   LANGUAGE SWITCHER
+   ═══════════════════════════════════════════ */
+(function() {
+  const LANG_KEY = 'pp-lang';
+
+  const dict = {
+
+    /* ── Nav ── */
+    'nav-features':     { zh:'功能',           en:'Features',        hant:'功能' },
+    'nav-colors':       { zh:'状态色彩',       en:'Status Colors',   hant:'狀態色彩' },
+    'nav-powerflow':    { zh:'功率流',         en:'Power Flow',      hant:'功率流' },
+    'nav-monitor':      { zh:'系统监控',       en:'System Monitor',  hant:'系統監控' },
+    'nav-download':     { zh:'下载',           en:'Download',        hant:'下載' },
+
+    /* ── Hero ── */
+    'hero-badge':       { zh:'Open Source · MIT License', en:'Open Source · MIT License', hant:'Open Source · MIT License' },
+    'hero-sub':         { zh:'macOS 菜单栏电源 & 系统监控工具。<br>实时功率流可视化、CPU/GPU/内存追踪、充电历史记录。',
+                          en:'macOS menu bar power & system monitor.<br>Real-time power flow, CPU/GPU/memory tracking, charging history.',
+                          hant:'macOS 選單列電源 & 系統監控工具。<br>即時功率流可視化、CPU/GPU/記憶體追蹤、充電歷史記錄。' },
+    'hero-github':      { zh:'⚡ GitHub 下载',  en:'⚡ Download from GitHub', hant:'⚡ GitHub 下載' },
+    'hero-explore':     { zh:'探索功能 →',     en:'Explore Features →',      hant:'探索功能 →' },
+
+    /* ── Features section ── */
+    'section-features-label':  { zh:'核心功能',          en:'Core Features',      hant:'核心功能' },
+    'section-features-title':  { zh:'每一瓦，尽在掌控',  en:'Every Watt, Under Control', hant:'每一瓦，盡在掌握' },
+    'section-features-desc':   { zh:'从菜单栏到全屏面板，PowerPulse 为你呈现 Mac 电源系统的完整面貌。',
+                                 en:'From menu bar to full-screen panel, PowerPulse reveals the complete picture of your Mac\'s power system.',
+                                 hant:'從選單列到全螢幕面板，PowerPulse 為你呈現 Mac 電源系統的完整面貌。' },
+
+    'feat-1-title':  { zh:'实时功率监控',       en:'Real-time Power Monitor',     hant:'即時功率監控' },
+    'feat-1-desc':   { zh:'菜单栏显示当前功率（等宽数字无跳动），自动切换 ⚡🔌🔋 图标，一眼掌握充放电状态。',
+                       en:'Current wattage in the menu bar (tabular numbers, no jitter). Auto-switching ⚡🔌🔋 icons for instant charge/discharge status.',
+                       hant:'選單列顯示當前功率（等寬數字無跳動），自動切換 ⚡🔌🔋 圖示，一眼掌握充放電狀態。' },
+    'feat-2-title':  { zh:'功率流可视化',       en:'Power Flow Visualization',    hant:'功率流可視化' },
+    'feat-2-desc':   { zh:'动态流带展示电力走向：墙壁电源 → 系统 + 电池，粒子动画跟随功率实时变化。',
+                       en:'Animated flow bands: wall power → system + battery. Particles pulse with real-time wattage.',
+                       hant:'動態流帶展示電力走向：牆壁電源 → 系統 + 電池，粒子動畫跟隨功率即時變化。' },
+    'feat-3-title':  { zh:'CPU / GPU / 内存',   en:'CPU / GPU / Memory',          hant:'CPU / GPU / 記憶體' },
+    'feat-3-desc':   { zh:'系统级监控面板，2秒刷新，5分钟趋势图表，逐核 CPU 使用率、GPU Metal 负载。',
+                       en:'System-level panel, 2s refresh, 5-min trend charts, per-core CPU, GPU Metal load.',
+                       hant:'系統級監控面板，2秒更新，5分鐘趨勢圖表，逐核 CPU 使用率、GPU Metal 負載。' },
+    'feat-4-title':  { zh:'充电历史',           en:'Charging History',            hant:'充電歷史' },
+    'feat-4-desc':   { zh:'累计充电量（Wh）、平均/峰值功率、充电时长统计，完整记录每次充电会话。',
+                       en:'Total Wh, average/peak wattage, charge duration — every session recorded.',
+                       hant:'累計充電量（Wh）、平均/峰值功率、充電時長統計，完整記錄每次充電會話。' },
+    'feat-5-title':  { zh:'毛玻璃外观',         en:'Frosted Glass UI',            hant:'毛玻璃外觀' },
+    'feat-5-desc':   { zh:'NSVisualEffectView 毛玻璃面板，自动适配深色/浅色模式，与 macOS 原生体验融为一体。',
+                       en:'NSVisualEffectView frosted glass, auto-adapts to dark/light mode. Feels native.',
+                       hant:'NSVisualEffectView 毛玻璃面板，自動適配深色/淺色模式，與 macOS 原生體驗融為一體。' },
+    'feat-6-title':  { zh:'充电器识别',         en:'Charger Detection',           hant:'充電器識別' },
+    'feat-6-desc':   { zh:'自动检测充电器型号、额定功率（V/A），在面板中清晰展示，不再猜测适配器规格。',
+                       en:'Auto-detects charger model, rated V/A. No more guessing your adapter specs.',
+                       hant:'自動偵測充電器型號、額定功率（V/A），在面板中清晰展示，不再猜測轉接器規格。' },
+
+    /* ── Status Colors section ── */
+    'section-colors-label': { zh:'状态色彩',                en:'Status Colors',          hant:'狀態色彩' },
+    'section-colors-title': { zh:'颜色即信息',              en:'Color is Information',   hant:'顏色即資訊' },
+    'section-colors-desc':  { zh:'四种颜色，四种电源状态。一瞥之间，尽在掌握。',
+                              en:'Four colors, four power states. One glance, total awareness.',
+                              hant:'四種顏色，四種電源狀態。一瞥之間，盡在掌握。' },
+
+    'color-1-title': { zh:'充电中',         en:'Charging',              hant:'充電中' },
+    'color-1-tag':   { zh:'CHARGING',       en:'CHARGING',              hant:'CHARGING' },
+    'color-1-desc':  { zh:'Mac 正在通过充电器充电，电池百分比持续上升。菜单栏图标显示 ⚡，功率流展示充电路径。',
+                       en:'Mac is charging via adapter. Battery percentage rising. Menu bar shows ⚡, flow bands show the charge path.',
+                       hant:'Mac 正在透過充電器充電，電池百分比持續上升。選單列圖示顯示 ⚡，功率流展示充電路徑。' },
+    'color-2-title': { zh:'正常使用',       en:'On Battery',            hant:'正常使用' },
+    'color-2-tag':   { zh:'ON BATTERY',     en:'ON BATTERY',            hant:'ON BATTERY' },
+    'color-2-desc':  { zh:'未接入充电器，电池正常供电。电量处于健康范围内，菜单栏图标显示 🔋。',
+                       en:'Unplugged. Battery is powering the Mac normally. Menu bar shows 🔋.',
+                       hant:'未接充電器，電池正常供電。電量處於健康範圍內，選單列圖示顯示 🔋。' },
+    'color-3-title': { zh:'已充满 · 适配器供电',  en:'Full · Adapter Power',    hant:'已充滿 · 變壓器供電' },
+    'color-3-tag':   { zh:'FULL · ADAPTER',        en:'FULL · ADAPTER',          hant:'FULL · ADAPTER' },
+    'color-3-desc':  { zh:'电池 100% 满电，充电器仍在连接。系统直接使用外接电力，电池保持满电待命。',
+                       en:'Battery 100%. Adapter still connected. System runs on external power, battery stands by at full charge.',
+                       hant:'電池 100% 滿電，充電器仍連線中。系統直接使用外部電力，電池保持滿電待命。' },
+    'color-4-title': { zh:'低电量警告',     en:'Low Battery',           hant:'低電量警告' },
+    'color-4-tag':   { zh:'LOW BATTERY',    en:'LOW BATTERY',           hant:'LOW BATTERY' },
+    'color-4-desc':  { zh:'电池电量 ≤ 15%，未接入电源。需要尽快充电，这是最紧急的状态提示。',
+                       en:'Battery ≤ 15%. No power source connected. Charge immediately — most critical state.',
+                       hant:'電池電量 ≤ 15%，未接入電源。需要盡快充電，這是最緊急的狀態提示。' },
+
+    /* ── Power Flow section ── */
+    'section-powerflow-label': { zh:'功率流',              en:'Power Flow',            hant:'功率流' },
+    'section-powerflow-title': { zh:'看见电力的<br>每一次脉动',
+                                 en:'See Every<br>Pulse of Power',
+                                 hant:'看見電力的<br>每一次脈動' },
+    'section-powerflow-desc':  { zh:'实时动画流带展示电力分配——墙壁电源如何分流到系统负载和电池充电。流带宽度与功率成正比，粒子跟随流动方向，让能量转换一目了然。',
+                                 en:'Animated flow bands show power distribution — how wall power splits between system load and battery charging. Band width scales with wattage, particles pulse with the flow.',
+                                 hant:'即時動畫流帶展示電力分配——牆壁電源如何分流到系統負載和電池充電。流帶寬度與功率成正比，粒子跟隨流動方向，讓能量轉換一目了然。' },
+    'pf-sample-interval': { zh:'采样间隔',  en:'Sample Interval',  hant:'取樣間隔' },
+    'pf-curve-window':   { zh:'实时曲线窗口', en:'Real-time Window', hant:'即時曲線視窗' },
+    'pf-sample-buffer':  { zh:'采样缓冲',    en:'Sample Buffer',    hant:'取樣緩衝' },
+
+    /* ── System Monitor section ── */
+    'section-monitor-label': { zh:'系统监控',             en:'System Monitor',        hant:'系統監控' },
+    'section-monitor-title': { zh:'硬件脉搏，实时捕捉',   en:'Hardware Pulse,<br>Captured Live', hant:'硬體脈搏，即時捕捉' },
+    'section-monitor-desc':  { zh:'底层 IOKit / host_statistics 直读，零中间层损耗。',
+                               en:'Direct IOKit / host_statistics reads. Zero middleware overhead.',
+                               hant:'底層 IOKit / host_statistics 直接讀取，零中間層損耗。' },
+    'metric-cpu-label':  { zh:'CPU 使用率',               en:'CPU Usage',             hant:'CPU 使用率' },
+    'metric-cpu-sub':    { zh:'per-core average · host_processor_info',
+                           en:'per-core average · host_processor_info',
+                           hant:'per-core average · host_processor_info' },
+    'metric-gpu-label':  { zh:'GPU 使用率',               en:'GPU Usage',             hant:'GPU 使用率' },
+    'metric-gpu-sub':    { zh:'IOAccelerator · Metal Performance',
+                           en:'IOAccelerator · Metal Performance',
+                           hant:'IOAccelerator · Metal Performance' },
+    'metric-mem-label':  { zh:'内存使用',                 en:'Memory Usage',          hant:'記憶體使用' },
+    'metric-mem-sub':    { zh:'12.5 / 16 GB · host_statistics64',
+                           en:'12.5 / 16 GB · host_statistics64',
+                           hant:'12.5 / 16 GB · host_statistics64' },
+
+    /* ── History section ── */
+    'section-history-label': { zh:'历史记录',             en:'History',               hant:'歷史記錄' },
+    'section-history-title': { zh:'每一次充电<br>都被铭记',
+                               en:'Every Charge<br>Remembered',
+                               hant:'每一次充電<br>都被銘記' },
+    'section-history-desc':  { zh:'累计充电量、平均功率、峰值功率、充电时长——所有数据持久化存储，完整记录每次充电会话。',
+                               en:'Total charge, average/peak wattage, duration — all persisted. Every session recorded.',
+                               hant:'累計充電量、平均功率、峰值功率、充電時長——所有資料持久化儲存，完整記錄每次充電會話。' },
+    'history-label':  { zh:'充电历史',  en:'Charging History', hant:'充電歷史' },
+    'stat-wh-label':  { zh:'累计 Wh',   en:'Total Wh',         hant:'累計 Wh' },
+    'stat-avg-label': { zh:'平均功率 W', en:'Avg Power W',     hant:'平均功率 W' },
+    'stat-peak-label':{ zh:'峰值功率 W', en:'Peak Power W',    hant:'峰值功率 W' },
+
+    /* ── Tech section ── */
+    'section-tech-label': { zh:'技术栈',      en:'Tech Stack',          hant:'技術棧' },
+    'section-tech-title': { zh:'纯原生，零依赖', en:'Pure Native, Zero Deps', hant:'純原生，零依賴' },
+    'section-tech-desc':  { zh:'完全使用 Apple 原生框架构建，无第三方依赖，轻量、安全、高性能。',
+                            en:'Built entirely with Apple native frameworks. No third-party dependencies. Lightweight, secure, performant.',
+                            hant:'完全使用 Apple 原生框架構建，無第三方依賴，輕量、安全、高效能。' },
+
+    /* ── CTA section ── */
+    'cta-title':   { zh:'释放你的 Mac 电源',    en:'Unleash Your Mac\'s Power',   hant:'釋放你的 Mac 電源' },
+    'cta-desc':    { zh:'开源免费，MIT 协议。从 GitHub 克隆，一行命令构建运行。',
+                     en:'Open source, MIT license. Clone from GitHub, build and run with one command.',
+                     hant:'開源免費，MIT 協議。從 GitHub 克隆，一行指令構建執行。' },
+    'cta-button':  { zh:'⚡ 从 GitHub 下载',   en:'⚡ Download from GitHub',      hant:'⚡ 從 GitHub 下載' },
+    'cta-req-os':  { zh:'💻 macOS 14.0+',      en:'💻 macOS 14.0+',               hant:'💻 macOS 14.0+' },
+    'cta-req-xcode':{ zh:'🔨 Xcode 16+',       en:'🔨 Xcode 16+',                 hant:'🔨 Xcode 16+' },
+    'cta-req-license':{ zh:'📜 MIT License',   en:'📜 MIT License',                hant:'📜 MIT License' },
+
+    /* ── Footer ── */
+    'footer-github': { zh:'GitHub', en:'GitHub', hant:'GitHub' },
+    'footer-author': { zh:'AutumnPants', en:'AutumnPants', hant:'AutumnPants' },
+
+    /* ── Flow header ── */
+    'flow-header':   { zh:'⚡ 功率流', en:'⚡ Power Flow', hant:'⚡ 功率流' },
+  };
+
+  /* Map i18n keys → element selectors + which property to change */
+  const bindings = [
+    /* Nav links (by href) */
+    { sel:'nav .nav-links a[href="#features"]', key:'nav-features' },
+    { sel:'nav .nav-links a[href="#colors"]',   key:'nav-colors' },
+    { sel:'nav .nav-links a[href="#powerflow"]',key:'nav-powerflow' },
+    { sel:'nav .nav-links a[href="#monitor"]',  key:'nav-monitor' },
+    { sel:'nav .nav-links a[href="#download"]', key:'nav-download' },
+
+    /* Hero */
+    { sel:'.hero-badge span:last-child',         key:'hero-badge' },
+    { sel:'.hero-sub',                           key:'hero-sub', html:true },
+    { sel:'.hero-buttons a.btn-primary',         key:'hero-github' },
+    { sel:'.hero-buttons a.btn-secondary',       key:'hero-explore' },
+
+    /* Features section */
+    { sel:'#features .section-label',            key:'section-features-label' },
+    { sel:'#features .section-title',            key:'section-features-title' },
+    { sel:'#features .section-desc',             key:'section-features-desc' },
+
+    { sel:'#features .features-grid > div:nth-child(1) h3', key:'feat-1-title' },
+    { sel:'#features .features-grid > div:nth-child(1) p',  key:'feat-1-desc' },
+    { sel:'#features .features-grid > div:nth-child(2) h3', key:'feat-2-title' },
+    { sel:'#features .features-grid > div:nth-child(2) p',  key:'feat-2-desc' },
+    { sel:'#features .features-grid > div:nth-child(3) h3', key:'feat-3-title' },
+    { sel:'#features .features-grid > div:nth-child(3) p',  key:'feat-3-desc' },
+    { sel:'#features .features-grid > div:nth-child(4) h3', key:'feat-4-title' },
+    { sel:'#features .features-grid > div:nth-child(4) p',  key:'feat-4-desc' },
+    { sel:'#features .features-grid > div:nth-child(5) h3', key:'feat-5-title' },
+    { sel:'#features .features-grid > div:nth-child(5) p',  key:'feat-5-desc' },
+    { sel:'#features .features-grid > div:nth-child(6) h3', key:'feat-6-title' },
+    { sel:'#features .features-grid > div:nth-child(6) p',  key:'feat-6-desc' },
+
+    /* Status Colors */
+    { sel:'#colors .section-label',              key:'section-colors-label' },
+    { sel:'#colors .section-title',              key:'section-colors-title' },
+    { sel:'#colors .section-desc',               key:'section-colors-desc' },
+
+    { sel:'#colors .color-card[data-color="green"] .color-title',  key:'color-1-title' },
+    { sel:'#colors .color-card[data-color="green"] .color-tag',    key:'color-1-tag' },
+    { sel:'#colors .color-card[data-color="green"] .color-desc',   key:'color-1-desc' },
+    { sel:'#colors .color-card[data-color="white"] .color-title',  key:'color-2-title' },
+    { sel:'#colors .color-card[data-color="white"] .color-tag',    key:'color-2-tag' },
+    { sel:'#colors .color-card[data-color="white"] .color-desc',   key:'color-2-desc' },
+    { sel:'#colors .color-card[data-color="purple"] .color-title', key:'color-3-title' },
+    { sel:'#colors .color-card[data-color="purple"] .color-tag',   key:'color-3-tag' },
+    { sel:'#colors .color-card[data-color="purple"] .color-desc',  key:'color-3-desc' },
+    { sel:'#colors .color-card[data-color="red"] .color-title',    key:'color-4-title' },
+    { sel:'#colors .color-card[data-color="red"] .color-tag',      key:'color-4-tag' },
+    { sel:'#colors .color-card[data-color="red"] .color-desc',     key:'color-4-desc' },
+
+    /* Power Flow */
+    { sel:'#powerflow .section-label',           key:'section-powerflow-label' },
+    { sel:'#powerflow .section-title',           key:'section-powerflow-title', html:true },
+    { sel:'#powerflow .section-desc',            key:'section-powerflow-desc' },
+    { sel:'#powerflow .flow-header',             key:'flow-header' },
+    { sel:'#powerflow [style*=\"font-size:28px\"] + div',  key:'pf-sample-interval' },
+    { sel:'#powerflow [style*=\"font-size:28px; color:var(--accent-green)\"] + div',  key:'pf-curve-window' },
+    { sel:'#powerflow [style*=\"font-size:28px; color:var(--accent-orange)\"] + div', key:'pf-sample-buffer' },
+
+    /* System Monitor */
+    { sel:'#monitor .section-label',             key:'section-monitor-label' },
+    { sel:'#monitor .section-title',             key:'section-monitor-title', html:true },
+    { sel:'#monitor .section-desc',              key:'section-monitor-desc' },
+    { sel:'[data-metric="cpu"] .metric-label',   key:'metric-cpu-label' },
+    { sel:'[data-metric="cpu"] .metric-sub',     key:'metric-cpu-sub' },
+    { sel:'[data-metric="gpu"] .metric-label',   key:'metric-gpu-label' },
+    { sel:'[data-metric="gpu"] .metric-sub',     key:'metric-gpu-sub' },
+    { sel:'[data-metric="mem"] .metric-label',   key:'metric-mem-label' },
+    { sel:'[data-metric="mem"] .metric-sub',     key:'metric-mem-sub' },
+
+    /* History */
+    { sel:'#history .section-label',             key:'section-history-label' },
+    { sel:'#history .section-title',             key:'section-history-title', html:true },
+    { sel:'#history .section-desc',              key:'section-history-desc' },
+    { sel:'#history .history-3d-card [style*=\"font-size:13px\"]', key:'history-label' },
+    { sel:'#history .history-stat:nth-child(1) .history-stat-label', key:'stat-wh-label' },
+    { sel:'#history .history-stat:nth-child(2) .history-stat-label', key:'stat-avg-label' },
+    { sel:'#history .history-stat:nth-child(3) .history-stat-label', key:'stat-peak-label' },
+
+    /* Tech */
+    { sel:'#tech .section-label',                key:'section-tech-label' },
+    { sel:'#tech .section-title',                key:'section-tech-title' },
+    { sel:'#tech .section-desc',                 key:'section-tech-desc' },
+
+    /* CTA */
+    { sel:'#download .cta-box h2',               key:'cta-title' },
+    { sel:'#download .cta-box p',                key:'cta-desc' },
+    { sel:'#download .cta-box a.btn-primary',    key:'cta-button' },
+    { sel:'#download .cta-requirements span:nth-child(1)', key:'cta-req-os' },
+    { sel:'#download .cta-requirements span:nth-child(2)', key:'cta-req-xcode' },
+    { sel:'#download .cta-requirements span:nth-child(3)', key:'cta-req-license' },
+
+    /* Footer */
+    { sel:'footer a[href*=\"PowerPulse\"]',      key:'footer-github' },
+    { sel:'footer a[href*=\"777cola\"]',          key:'footer-author' },
+  ];
+
+  /* Also translate the inline-style labels under powerflow stats */
+  /* These use inline styles — we already mapped the div+div pattern above. */
+
+  const currentLang = localStorage.getItem(LANG_KEY) || 'zh';
+
+  function applyLang(lang) {
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang === 'hant' ? 'zh-TW' : 'en';
+    bindings.forEach(b => {
+      const el = document.querySelector(b.sel);
+      if (!el) return;
+      const txt = dict[b.key][lang];
+      if (txt !== undefined) {
+        if (b.html) { el.innerHTML = txt; }
+        else { el.textContent = txt; }
+      }
+    });
+    localStorage.setItem(LANG_KEY, lang);
+    /* highlight active lang button */
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.style.borderColor = btn.dataset.lang === lang ? 'var(--accent-blue)' : 'var(--border)';
+      btn.style.color = btn.dataset.lang === lang ? 'var(--accent-blue)' : '';
+    });
+  }
+
+  /* init */
+  applyLang(currentLang);
+
+  /* bind clicks */
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyLang(btn.dataset.lang));
+  });
+
+})();
 </script>
 
 <!-- GSAP ScrollTo plugin -->
