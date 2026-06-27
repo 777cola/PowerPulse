@@ -1237,23 +1237,24 @@ footer a:hover { color: var(--text); }
    ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
 
-  body { font-size: 17px; }
+  html { font-size: 18px; }
 
   /* ── Nav ── */
   .hamburger { display: flex; }
   .nav-links { display: none; }
   #lang-toggle { display: none; }
   nav { padding: 10px 16px; }
-  .nav-mobile-menu a { font-size: 18px; padding: 16px 16px; }
+  nav .nav-logo { font-size: 20px; }
+  .nav-mobile-menu a { font-size: 1.1rem; padding: 16px 16px; }
 
   /* ── Hero ── */
   .hero { padding: 100px 16px 60px; min-height: auto; }
-  .hero h1 { font-size: clamp(36px, 14vw, 52px); letter-spacing: -1.5px; }
-  .hero-sub { font-size: 17px; max-width: 100%; margin-bottom: 32px; line-height: 1.7; }
-  .hero-badge { font-size: 12px; padding: 6px 16px; margin-bottom: 24px; }
+  .hero h1 { font-size: clamp(2.2rem, 12vw, 3.2rem); letter-spacing: -1.5px; }
+  .hero-sub { font-size: 1rem; max-width: 100%; margin-bottom: 32px; line-height: 1.7; }
+  .hero-badge { font-size: 0.7rem; padding: 6px 16px; margin-bottom: 24px; }
   .hero-buttons { flex-direction: column; gap: 14px; width: 100%; max-width: 320px; }
   .hero-buttons .btn-primary,
-  .hero-buttons .btn-secondary { justify-content: center; width: 100%; font-size: 16px; padding: 16px 32px; }
+  .hero-buttons .btn-secondary { justify-content: center; width: 100%; font-size: 0.95rem; padding: 16px 32px; }
   .hero-3d-container { width: 320px !important; height: 320px !important; opacity: 0.08; }
   .hero-3d-container canvas { width: 320px !important; height: 320px !important; }
   .menubar-preview { margin-top: 40px; transform: scale(0.85); transform-origin: center; }
@@ -1261,15 +1262,15 @@ footer a:hover { color: var(--text); }
 
   /* ── Sections general ── */
   section { padding: 60px 16px; }
-  .section-title { font-size: clamp(28px, 8vw, 36px); letter-spacing: -1px; }
-  .section-desc { font-size: 17px; line-height: 1.7; }
+  .section-title { font-size: clamp(1.6rem, 8vw, 2rem); letter-spacing: -1px; }
+  .section-desc { font-size: 1rem; line-height: 1.7; }
 
   /* ── Features ── */
   .features-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 32px; }
   .feature-card { padding: 28px; }
-  .feature-icon { width: 44px; height: 44px; font-size: 20px; margin-bottom: 16px; }
-  .feature-card h3 { font-size: 18px; }
-  .feature-card p { font-size: 15px; line-height: 1.7; }
+  .feature-icon { width: 44px; height: 44px; font-size: 1.2rem; margin-bottom: 16px; }
+  .feature-card h3 { font-size: 1.1rem; }
+  .feature-card p { font-size: 0.9rem; line-height: 1.7; }
 
   /* ── Power Flow ── */
   #powerflow { padding: 60px 0; }
@@ -1282,36 +1283,37 @@ footer a:hover { color: var(--text); }
   #colors [style*="margin-bottom:80px"] { margin-bottom: 40px !important; }
   .color-showcase { grid-template-columns: 1fr; gap: 14px; }
   .color-card { padding: 32px 24px 28px; }
-  .color-title { font-size: 18px; }
-  .color-desc { font-size: 14px; line-height: 1.7; }
+  .color-title { font-size: 1.1rem; }
+  .color-tag { font-size: 0.6rem; }
+  .color-desc { font-size: 0.85rem; line-height: 1.7; }
   .color-orb-wrap { width: 80px; height: 80px; }
 
   /* ── System Monitor ── */
   .sysmon-visual { gap: 14px; }
   .metric-card { padding: 28px; }
   .metric-ring { width: 100px; height: 100px; }
-  .metric-value { font-size: 24px; }
-  .metric-label { font-size: 15px; }
-  .metric-sub { font-size: 12px; }
+  .metric-value { font-size: 1.4rem; }
+  .metric-label { font-size: 0.9rem; }
+  .metric-sub { font-size: 0.7rem; }
 
   /* ── History ── */
   #history .history-section { gap: 24px; }
   .history-3d-card { transform: rotateY(0deg) rotateX(0deg); padding: 24px; }
   .history-bars { height: 120px; }
-  .history-stat-val { font-size: 24px; }
-  .history-stat-label { font-size: 12px; }
+  .history-stat-val { font-size: 1.4rem; }
+  .history-stat-label { font-size: 0.7rem; }
 
   /* ── Tech ── */
   .tech-grid { gap: 12px; margin-top: 28px; }
-  .tech-tag { font-size: 13px; padding: 10px 20px; }
+  .tech-tag { font-size: 0.8rem; padding: 10px 20px; }
 
   /* ── CTA ── */
   .cta-box { padding: 40px 24px; }
-  .cta-box h2 { font-size: 28px; }
-  .cta-box p { font-size: 16px; }
-  .cta-box .btn-primary { font-size: 16px; padding: 16px 36px; }
+  .cta-box h2 { font-size: 1.6rem; }
+  .cta-box p { font-size: 0.95rem; }
+  .cta-box .btn-primary { font-size: 0.95rem; padding: 16px 36px; }
   .cta-requirements { flex-direction: column; gap: 10px; align-items: center; }
-  .cta-requirements span { font-size: 13px; }
+  .cta-requirements span { font-size: 0.75rem; }
 
   /* ── Footer ── */
   footer { flex-direction: column; gap: 12px; padding: 24px 16px; text-align: center; }
@@ -1326,22 +1328,23 @@ footer a:hover { color: var(--text); }
 }
 
 @media (max-width: 420px) {
+  html { font-size: 16px; }
   .hero { padding: 80px 12px 40px; }
-  .hero h1 { font-size: 30px; }
-  .hero-sub { font-size: 16px; }
+  .hero h1 { font-size: 1.9rem; }
+  .hero-sub { font-size: 0.95rem; }
   .hero-3d-container { width: 200px !important; height: 200px !important; }
   .hero-3d-container canvas { width: 200px !important; height: 200px !important; opacity: 0.5; }
   .menubar-preview { transform: scale(0.7); margin-top: 24px; }
   .hero-buttons { max-width: 100%; }
   section { padding: 40px 12px; }
-  .section-desc { font-size: 16px; }
-  .feature-card p { font-size: 14px; }
+  .section-desc { font-size: 0.95rem; }
+  .feature-card p { font-size: 0.85rem; }
   .feature-card { padding: 20px; }
   .color-card { padding: 24px 16px 20px; }
-  .color-desc { font-size: 13px; }
+  .color-desc { font-size: 0.8rem; }
   .cta-box { padding: 28px 16px; }
-  .cta-box h2 { font-size: 24px; }
-  .cta-box p { font-size: 15px; }
+  .cta-box h2 { font-size: 1.4rem; }
+  .cta-box p { font-size: 0.9rem; }
   .nav-mobile-menu { padding: 72px 16px 16px; }
 }
 
