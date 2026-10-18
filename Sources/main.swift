@@ -651,8 +651,10 @@ enum StatusBarRender {
             rep.size = NSSize(width: W, height: H)
             NSGraphicsContext.saveGraphicsState()
             NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-            NSColor.black.setFill()
-            NSRect(x: 0, y: 0, width: W, height: H).fill()
+            if !CommandLine.arguments.contains("--alpha") {
+                NSColor.black.setFill()
+                NSRect(x: 0, y: 0, width: W, height: H).fill()
+            }
             title.draw(at: NSPoint(x: 6, y: (CGFloat(H) - sz.height) / 2 + 1))
             NSGraphicsContext.restoreGraphicsState()
             if let data = rep.representation(using: .png, properties: [:]) {

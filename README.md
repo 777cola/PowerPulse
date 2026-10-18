@@ -1,206 +1,246 @@
-<p align="center">
-  <strong>⚡ PowerPulse</strong><br>
-  <em>macOS menu bar power & system monitor</em><br>
-  <em>macOS 菜单栏电源 & 系统监控工具</em>
-</p>
+<div align="center">
 
-<p align="center">
-  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
-  <img src="https://img.shields.io/badge/Swift-6.4-orange" alt="Swift 6.4">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License: MIT">
-</p>
+# PowerPulse
 
-<p align="center">
-  🌐 <a href="https://777cola.github.io/PowerPulse/"><strong>Live Website / 在线展示网站 →</strong></a>
-</p>
+**菜单栏里，看清每一瓦。**
 
----
+macOS 菜单栏电源监控 · 每秒采样 · 识别充电器 PD 档位 · 记录 30 天历史
 
-<p align="center">
-  <img src="screenshots/power-flow.png" width="300" alt="Power Flow">
-  &nbsp;&nbsp;
-  <img src="screenshots/system-monitor.png" width="300" alt="System Monitor">
-  &nbsp;&nbsp;
-  <img src="screenshots/charging-history.png" width="300" alt="Charging History">
-</p>
+[![Latest release](https://img.shields.io/github/v/release/777cola/PowerPulse?include_prereleases&label=release)](https://github.com/777cola/PowerPulse/releases)
+[![macOS](https://img.shields.io/badge/macOS-14.0%2B-1A4B8C)](https://github.com/777cola/PowerPulse)
+[![License](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+[![Pure AppKit](https://img.shields.io/badge/UI-pure%20AppKit-E86C00)](https://github.com/777cola/PowerPulse)
 
-## What's new in 2.0 / 2.0 重写了什么
+[官网](https://powerpulse.qijunhao.xyz) · [下载](https://github.com/777cola/PowerPulse/releases) · [解剖图](https://powerpulse.qijunhao.xyz/assets/powerbench.html) · [反馈](https://github.com/777cola/PowerPulse/issues)
 
-2.0 是一次完整重写：从 SwiftUI 换成纯 AppKit，从 2903 行（其中 920 行是从没被引用的死代码）降到约 2600 行有效代码。
+<img src="docs/img/panel-flow.png" width="640" alt="功率流面板">
 
-SwiftUI → pure AppKit. 2903 lines (920 of them dead) → ~2600 lines of live code.
-
-| | 1.0 | 2.0 |
-|---|---|---|
-| UI | SwiftUI + Swift Charts | 纯 AppKit，自绘 / pure AppKit, hand-drawn |
-| 构建 / build | `swift build`（要 Xcode） | `./build_app.sh`（CLT 即可） |
-| 内存口径 / memory | `external_page_count` 重复计入，虚高 | 与活动监视器一致 |
-| 历史 / history | 插电就清空、跨天丢弃 | SQLite 持久化，按天聚合 |
-| 刷新 / refresh | 采样 1s、菜单栏 10s | 全链路 1s，插拔即时响应 |
-| 死代码 / dead code | 920 行 | 0 |
-
-修掉的 bug / Fixed:
-
-- 内存占用被系统性虚报（`external_page_count` 本来就在 `active` 里，旧版又加了一次）
-- 插电瞬间清空全部充电历史 / history wiped on every plug-in
-- 只存当天数据，跨天丢失 / cross-day data dropped on load
-- 菜单栏 10 秒才刷新一次，数字"跳一下就冻住"
-- M 系列读不到电池温度（不在主节点，在 `AppleSmartBatteryPack`）/ battery temperature was never read on Apple silicon
-
-## Features / 功能特性
-
-### Charger identification / 充电器识别
-
-- 当前协商功率 + 套装上限 + PD 档位表（5V/9V/12V/15V/20V）
-- 厂商、型号、协议
-- 体检结论：为什么没跑满——涓流、温控、线材/档位，还是满功率
+</div>
 
 ---
 
-- Negotiated wattage, the kit's ceiling, and the full PDO table
-- Vendor / model / protocol
-- A verdict on why charging isn't at full speed: taper, thermal, cable tier, or all good
+## 它做什么
 
-### Menu Bar / 菜单栏
+电源相关的数据本来就在系统里，只是没人给你摆到一起。PowerPulse 每秒读一次寄存器，把三件事拆开：
 
-- 电量 + 电池图标 + 实时瓦数，等宽数字避免跳动
-- 四种显示模式：百分比+功率 / 仅百分比 / 仅功率 / 仅图标
-- 状态栏电池图标随状态变色：充电🟢（带闪电）、已接电源🟣、正常⚪、低电量🔴
+- **墙插给了多少** — `SystemPowerIn`，充电器实际输进机器的功率
+- **系统吃了多少** — `SystemLoad`，CPU / 屏幕 / 内存加起来
+- **电池进了多少** — 充电时进电池，放电时出电池
 
----
+三者必须能互相加减：`墙插 ≈ 系统 + 电池`。对不上，就是有地方在偷偷耗电。
 
-- Percentage + battery icon + live wattage, tabular digits — no layout shift
-- Four display modes
-- Color-coded by power state
+## 五个面板
 
-### Power Flow / 功率流
+| 面板 | 回答的问题 |
+|---|---|
+| **功率流** | 能量从哪来、到哪去。带子粗细跟着瓦数走，充电时自动分成系统与电池两条 |
+| **系统监控** | CPU / GPU / 内存占用，加上按能耗排序的进程榜 |
+| **充电历史** | 最近一次充进去多少 Wh、近 7 天每天多少、导出 CSV |
+| **充电器** | 协商到几伏几安、支持哪些 PD 档位、为什么没跑满 |
+| **设置** | 采样间隔、历史保留、通知阈值、菜单栏显示、语言 |
 
-- 墙插 → 系统 / 电池两条流向，带宽与功率成正比
-- 粒子流速随功率变化，插拔即时切换
+<img src="docs/img/panel-adapter.png" width="320" alt="充电器面板"> <img src="docs/img/panel-monitor.png" width="320" alt="系统监控面板">
 
----
+## 充电器体检
 
-- Wall → system / battery, band width proportional to wattage
-- Particle speed follows the load
+插上电只看到「正在充电」没有意义，PowerPulse 会把充电器的底细读出来：
 
-### System Monitor / 系统监控
+- **协商档位** — 当前电压电流，例如 `20V × 2.2A`
+- **能力上限** — `UsbHvcMenu` 里的完整 PDO 表（5V/9V/12V/15V/20V）
+- **为什么没跑满** — 涓流、温控、慢充原因，直接给结论而不是原始码
 
-- CPU / GPU / 内存，与活动监视器同口径
-- 进程耗电排行（`rusage` 差分，不需要 root）
-- 系统功耗曲线
+线材的 e-marker 读不到，这一点 macOS 不暴露。只能通过「档位表上限 vs 实际协商值」推断是不是线材拖后腿。
 
----
+## 其他
 
-- CPU / GPU / memory, matching Activity Monitor
-- Per-process energy ranking via `rusage` deltas — no root needed
+- **菜单栏**：百分比 + 功率、仅百分比、仅功率、仅图标，四种显示
+- **桌面小组件**：WidgetKit，不打开面板也能看当前功率
+- **通知**：低电量、充满、拔电、高温、慢充异常，可逐项开关
+- **历史**：SQLite + WAL，默认保留 30 天，随用随导
+- **语言**：简体中文 / 繁體中文 / English
+- **开机自启**：`SMAppService`
 
-### History / 充电历史
+## 安装
 
-- 本次充电：累计 Wh、平均/峰值功率、时长
-- 功率曲线 + 近 7 天柱状图
-- CSV 导出
+### 下载
 
----
+到 [Releases](https://github.com/777cola/PowerPulse/releases) 下载，拖进「应用程序」。
 
-- Current session: Wh, average/peak wattage, duration
-- Power curve + 7-day chart + CSV export
+App 用 ad-hoc 签名，首次打开若提示「无法验证开发者」，右键 → 打开。
 
-### Battery Health / 电池健康
+### 从源码构建
 
-- 健康度、循环次数、设计容量 vs 实际容量、温度、年龄
-
-### Extras / 其他
-
-- 通知：低电量、充满、拔电、高温、充电异常
-- 开机自启（`SMAppService`）
-- **桌面小组件**（小 / 中两种尺寸）
-- 三语：简体 / 繁體 / English
-
-## Requirements / 系统要求
-
-- macOS 14.0 (Sonoma) or later
-- 主程序：CommandLineTools 即可编译 / main app builds with CommandLineTools alone
-- 小组件：需要 Xcode 工具链（`xcrun swiftc`）/ widget needs the Xcode toolchain
-
-## Install / 安装
-
-Download `PowerPulse-Installer.dmg` from [Releases](https://github.com/777cola/PowerPulse/releases), open it and drag PowerPulse to Applications.
-
-从 [Releases](https://github.com/777cola/PowerPulse/releases) 下载 `PowerPulse-Installer.dmg`，双击打开，将 PowerPulse 拖入 Applications 文件夹即可。
-
-## Build from Source / 从源码构建
+需要 macOS 14+ 和命令行工具（`xcode-select --install`）：
 
 ```bash
 git clone https://github.com/777cola/PowerPulse.git
 cd PowerPulse
-./build_app.sh
-cp -R PowerPulse.app /Applications/ && open /Applications/PowerPulse.app
+./build_app.sh          # 产出 PowerPulse.app，小组件已打进 PlugIns/
+open PowerPulse.app
 ```
 
-### Widget / 小组件
+不需要 Xcode 工程，也不需要 CocoaPods / SPM。
 
-小组件装在 `PowerPulse.app/Contents/PlugIns/PowerPulseWidget.appex`，数据通过
-`~/Library/Containers/com.autumnpants.powerpulse.widget/Data/Library/Application Support/PowerPulse/widget.json` 传递（小组件被沙盒围住，只能读自己的容器）。
+## 它自己有多费电
 
-首次安装后如果小组件画廊里没有：
+一个测电源的软件，自己先不能费电。
+
+| 状态 | CPU | 内存 |
+|---|---|---|
+| 弹窗关闭（常驻） | **0.4%** | 21 MB |
+| 打开功率流（有动画） | 6% | 60 MB |
+| 打开设置（静态） | 1.2% | 57 MB |
+
+省电的做法：状态栏标题只在内容变化时重建、电池图标按「电量/颜色/闪电」缓存、隐藏面板停止动画、功率流 10fps 且不做每帧高斯模糊。
+
+## 数据从哪来
+
+| 数据 | 来源 |
+|---|---|
+| 电池功率、电压电流、循环次数、温度 | IOKit `AppleSmartBattery`（温度在 `AppleSmartBatteryPack.BatteryData`）|
+| 充电器协商功率、PD 档位、厂商型号 | `AdapterDetails`、`UsbHvcMenu` |
+| 进程能耗 | `rusage_info_v6` 的 `ri_energy_nj` 差分，不需要 root |
+| 系统负载 | `host_statistics` / `IOAccelerator` |
+
+没有估算、没有模型拟合，全部是寄存器原值。
+
+## 开发
+
+```
+Sources/
+  main.swift        状态栏、弹窗控制器、程序入口
+  Support.swift     三语文案、设置、设计常量
+  Power.swift       IOKit 采样、电池/充电器模型
+  History.swift     SQLite 存储、会话统计、CSV 导出
+  Services.swift    通知、开机自启、更新检查、插拔监听
+  Widgets.swift     指标卡、TabBar、布局工具
+  FlowView.swift    功率流图示
+  Charts.swift      折线图、柱状图
+  Panels.swift      五个面板
+  WidgetBridge.swift 小组件快照推送
+SourcesWidget/
+  WidgetSnapshot.swift  主程序与小组件共享的快照
+  PowerPulseWidget.swift WidgetKit 时间线与视图
+```
+
+### 自检
+
+主程序带一套离屏渲染和无界面测试，改 UI 时不用靠肉眼：
 
 ```bash
-pluginkit -a /Applications/PowerPulse.app/Contents/PlugIns/PowerPulseWidget.appex
-killall chronod
+./build/PowerPulse --selftest /tmp/pp            # 5 面板 × 3 语言，导出 PNG
+./build/PowerPulse --selftest /tmp/pp --dark     # 深色
+./build/PowerPulse --selftest /tmp/pp --plugged  # 用假数据渲染插电双带布局
+./build/PowerPulse --export                      # 验证 CSV 导出
+./build/PowerPulse --statusbar /tmp/sb --alpha   # 菜单栏标题离屏渲染
+./build/PowerPulse --cycle=24                    # 反复开关弹窗，压测视图泄漏
 ```
 
-**注意**：`appex` 必须带 `com.apple.security.app-sandbox` entitlement，否则 `pluginkit` 根本不收录。ad-hoc 签名也可以，不需要开发者证书。
+自检里还有一层布局审计：任何控件超出父视图 3pt 以上都会打印出来。
 
-### Create DMG Installer / 创建安装包
+## 已知限制
+
+- **iPhone 电池**：需要 `libimobiledevice`，当前版本没做
+- **线材 e-marker**：macOS 不暴露，只能推断
+- **Intel Mac**：未测试，功耗字段可能与 Apple Silicon 不同
+- **桌面小组件**：需要 ad-hoc 签名 + App Sandbox entitlement 才会被系统收录
+
+## 变更
+
+**2.0.0** — 纯 AppKit 重写。修复旧版历史插电即清空、内存重复计数、菜单栏 10 秒才刷新；新增充电器识别、充电体检、SQLite 历史、通知、桌面小组件、三语界面。
+
+**1.0.x** — SwiftUI 版本，基础电量与功率显示。
+
+## License
+
+MIT © AutumnPants
+
+---
+
+<div align="center"><sub>如果用得上，给个 ⭐ 就行。</sub></div>
+
+---
+
+# PowerPulse (English)
+
+**Every watt, right in your menu bar.**
+
+A macOS menu bar power monitor: samples once per second, decodes USB-C PD negotiation, keeps 30 days of history.
+
+## What it shows
+
+Three numbers that must add up:
+
+- **Wall input** — `SystemPowerIn`, what the charger actually delivers
+- **System load** — `SystemLoad`, what the machine consumes
+- **Battery flow** — in while charging, out while discharging
+
+`Wall ≈ System + Battery`. When it doesn't, something is leaking.
+
+## Panels
+
+| Panel | Answers |
+|---|---|
+| **Power Flow** | Where energy goes; band thickness follows wattage |
+| **System** | CPU / GPU / memory, plus an energy-ranked process list |
+| **History** | Last session's Wh, 7-day bars, CSV export |
+| **Adapter** | Negotiated volts/amps, PD capability table, and why it isn't maxed out |
+| **Settings** | Sampling interval, retention, alerts, menu bar style, language |
+
+## Adapter checkup
+
+Beyond "charging", PowerPulse reads the charger's own register:
+
+- negotiated voltage and current (`20V × 2.2A`)
+- full PDO table from `UsbHvcMenu`
+- a verdict when power is below expectation: trickle, thermal, slow-charge reason
+
+Cable e-marker is not exposed by macOS, so cable quality can only be inferred from "capability vs negotiated".
+
+## Install
+
+Download from [Releases](https://github.com/777cola/PowerPulse/releases), drag to Applications. Ad-hoc signed — if Gatekeeper complains, right-click → Open.
+
+Build from source (macOS 14+, Command Line Tools):
 
 ```bash
-./create_dmg.sh
+git clone https://github.com/777cola/PowerPulse.git
+cd PowerPulse && ./build_app.sh && open PowerPulse.app
 ```
 
-## Project Structure / 项目结构
+No Xcode project, no package manager.
 
+## Cost of monitoring
+
+| State | CPU | Memory |
+|---|---|---|
+| Popover closed | **0.4%** | 21 MB |
+| Power Flow open (animated) | 6% | 60 MB |
+| Settings open | 1.2% | 57 MB |
+
+## Where the numbers come from
+
+`AppleSmartBattery` (IOKit) for power, current, cycles and temperature; `AdapterDetails` and `UsbHvcMenu` for the charger; `rusage_info_v6`'s `ri_energy_nj` delta for per-process energy. No estimation, no model fitting.
+
+## Development
+
+`./build_app.sh` builds the app and the widget extension with `swiftc` alone. Headless self-checks:
+
+```bash
+./build/PowerPulse --selftest /tmp/pp --dark --plugged
+./build/PowerPulse --export
+./build/PowerPulse --cycle=24
 ```
-PowerPulse/
-├── Sources/
-│   ├── Support.swift        # 三语文案、设置项、设计常量
-│   ├── Power.swift          # IOKit 采样、适配器解析、CPU/GPU/内存、耗能排行
-│   ├── History.swift        # SQLite 持久化、聚合、CSV
-│   ├── Services.swift       # 通知、登录项、更新检查、电源事件
-│   ├── FlowView.swift       # 功率流动画（自绘）
-│   ├── Panels.swift         # 五个面板
-│   ├── Widgets.swift        # 卡片、Tab、开关等控件
-│   ├── Charts.swift         # 折线 / 柱状 / 进度条
-│   ├── WidgetBridge.swift   # 写给桌面小组件的快照
-│   └── main.swift           # 状态栏 + 弹窗 + 入口
-├── SourcesWidget/           # WidgetKit 扩展
-├── assets/AppIcon.icns
-├── build_app.sh             # 一条命令出 .app（含小组件）
-├── create_dmg.sh
-└── docs/                    # 展示网站
-```
 
-## Technical Details / 技术细节
+The self-test renders every panel in every language offscreen and audits the layout for overflow.
 
-| Component | API | 说明 |
-|-----------|-----|------|
-| 功率 / power | `AppleSmartBattery → PowerTelemetryData` | 墙插、系统、电池功率 |
-| 电池 / battery | `AppleSmartBattery → BatteryData` | 百分比、循环、容量 |
-| 温度 / temp | `AppleSmartBatteryPack → BatteryData.Temperature` | ÷100 ℃ |
-| 充电器 / adapter | `AdapterDetails` | `Watts` / `AdapterVoltage` / `Current` / `UsbHvcMenu` |
-| 限速原因 | `ChargerData` | `SlowChargingReason` / `NotChargingReason` / `TimeChargingThermallyLimited` |
-| CPU | `host_processor_info()` | |
-| GPU | `IOAccelerator → PerformanceStatistics` | |
-| 内存 / memory | `host_statistics64()` | active − purgeable + wired + compressed |
-| 进程耗电 | `proc_pid_rusage(RUSAGE_INFO_V6)` | `ri_energy_nj` 差分 |
-| UI | AppKit + Core Graphics | |
-| 小组件 | WidgetKit + SwiftUI | |
+## Known limits
 
-## Known limitations / 已知限制
+- iPhone battery readout needs `libimobiledevice` — not in this version
+- Cable e-marker is invisible to macOS
+- Intel Macs are untested
+- The widget requires ad-hoc signing with an App Sandbox entitlement
 
-- USB-C 线材的 e-marker 信息 macOS 不对外暴露，所以"是不是线拖后腿"只能靠推断（档位表显示 100W 但一直协商在 60W），不能像专业电流表那样测死
-- ad-hoc 签名，对外分发仍会被 Gatekeeper 拦，需要右键打开
-- 耗电排行只统计当前用户可见的进程
+## License
 
-## License / 开源协议
-
-[MIT](LICENSE) © [AutumnPants](https://github.com/777cola)
+MIT © AutumnPants
