@@ -38,7 +38,7 @@ private func wrapScroll(_ content: NSView, height: CGFloat) -> NSScrollView {
 
 final class NowPanel: Panel {
     private let flow = FlowView()
-    private let wallCard = MetricCard(title: S.wall.v(Settings.shared.lang), symbol: "powerplug.fill", color: D.label)
+    private let wallCard = MetricCard(title: S.wall.v(Settings.shared.lang), symbol: "powerplug.fill", color: D.purple)
     private let sysCard = MetricCard(title: S.systemUse.v(Settings.shared.lang), symbol: "desktopcomputer", color: D.blue)
     private let batCard = MetricCard(title: S.batteryOut.v(Settings.shared.lang), symbol: "battery.25", color: D.orange)
     private let stateCard = MetricCard(title: S.battery.v(Settings.shared.lang), symbol: "bolt.fill", color: D.green)
@@ -48,14 +48,14 @@ final class NowPanel: Panel {
     private let bar = LevelBar()
     private let adapterBox = NSView()
 
-    override var preferredHeight: CGFloat { 292 }
+    override var preferredHeight: CGFloat { 264 }
 
     init() {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
 
         flow.translatesAutoresizingMaskIntoConstraints = false
-        flow.heightAnchor.constraint(equalToConstant: 160).isActive = true
+        flow.heightAnchor.constraint(equalToConstant: 132).isActive = true
 
         let cards = CardRow([wallCard, sysCard, batCard, stateCard], spacing: 7, height: 58)
 
@@ -95,8 +95,9 @@ final class NowPanel: Panel {
 
     override func refresh(power s: PowerSnapshot, adapter a: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
         flow.update(s, a)
-        wallCard.update(value: s.isPluggedIn ? "\(fmtW(s.wallW)) W" : "—")
-        sysCard.update(value: "\(fmtW(s.systemUsageW)) W")
+        wallCard.update(value: s.isPluggedIn ? String(format: "%.1f W", s.wallW) : "—")
+        wallCard.setDimmed(!s.isPluggedIn)
+        sysCard.update(value: String(format: "%.1f W", s.systemUsageW))
 
         if s.isCharging {
             batCard.update(title: S.chargePower.v(lang), value: String(format: "%.1f W", s.batteryChargeW), valueColor: D.green)

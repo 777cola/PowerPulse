@@ -1,23 +1,32 @@
 import AppKit
 
-/// 功率流动画视图 —— 复刻现版设计：左侧源块，右侧系统/电池，中间流动带。
+/// 功率流动画视图。
+/// 三个节点串一条带：左节点(源) — 带 — 右节点(目标)。
+/// 节点是同尺寸圆角卡片，两端视觉重量对齐；带子有最小高度，胶囊数字永远嵌在带里不会溢出。
 final class FlowView: NSView {
     var snapshot = PowerSnapshot()
     var adapter: AdapterInfo?
     private var phase: CGFloat = 0
     private var timer: Timer?
 
+    private let nodeW: CGFloat = 46
+    private let gap: CGFloat = 9          // 节点与带之间的缝隙
+    private let minBand: CGFloat = 26     // 带子最低高度，保证胶囊放得下
+    private let maxBand: CGFloat = 46
+    private let bandGap: CGFloat = 12     // 两条带之间的间距
+
     override var isFlipped: Bool { true }
     override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: 160) }
 
+    // MARK: - 动画
+
     func startAnimating() {
         guard timer == nil else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 10.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            // 功率越大流得越快：1.5s(慢) ~ 0.7s(快) 一圈
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 12.0, repeats: true) { [weak self] _ in
+            guard let self, self.window != nil else { return }
             let w = max(self.snapshot.isPluggedIn ? self.snapshot.wallW : self.snapshot.batteryW, 1)
             let speed = min(max(0.35 + w / 120.0, 0.35), 1.6)
-            self.phase = (self.phase + CGFloat(speed) * 0.022).truncatingRemainder(dividingBy: 1)
+            self.phase = (self.phase + CGFloat(speed) * 0.030).truncatingRemainder(dividingBy: 1)
             self.needsDisplay = true
         }
     }
@@ -28,183 +37,188 @@ final class FlowView: NSView {
     }
 
     func update(_ s: PowerSnapshot, _ a: AdapterInfo?) {
+        let stateChanged = s.isPluggedIn != snapshot.isPluggedIn || s.isCharging != snapshot.isCharging
         snapshot = s
         adapter = a
-        needsDisplay = true
+        if stateChanged { needsDisplay = true }
     }
 
     // MARK: - 绘制
 
     override func draw(_ dirtyRect: NSRect) {
-        let w = bounds.width
-        let h = bounds.height
-        guard w > 60, h > 20 else { return }
-
-        if snapshot.isPluggedIn {
-            drawPlugged(w: w, h: h)
-        } else {
-            drawBatteryOnly(w: w, h: h)
-        }
+        guard bounds.width > 120, bounds.height > 40 else { return }
+        if snapshot.isPluggedIn { drawPlugged() } else { drawBatteryOnly() }
     }
 
-    private func drawPlugged(w: CGFloat, h: CGFloat) {
+    private func bandHeight(_ watts: Double) -> CGFloat {
+        let t = CGFloat(min(max(watts / 60.0, 0), 1))
+        return minBand + (maxBand - minBand) * t
+    }
+
+    private var startX: CGFloat { nodeW + gap }
+    private var endX: CGFloat { bounds.width - nodeW - gap }
+
+    // MARK: 插电：墙插 → 系统 / 电池
+
+    private func drawPlugged() {
+        let h = bounds.height
         let sysW = max(snapshot.systemUsageW, 0.1)
         let chgW = max(snapshot.batteryChargeW, 0.1)
-        let total = max(snapshot.wallW, sysW + chgW, 1)
-        let sysRatio = min(sysW / total, 1)
-        let chgRatio = min(chgW / total, 1)
+        let sysH = bandHeight(sysW)
+        let chgH = bandHeight(chgW)
+        let blockH = sysH + bandGap + chgH
+        let top = (h - blockH) / 2
+        let sysY = top + sysH / 2
+        let batY = top + sysH + bandGap + chgH / 2
+        let charging = snapshot.isCharging && chgW > 0.3
 
-        let gap: CGFloat = 10
-        let half = (h - gap) / 2
-        let sysH = max(half * CGFloat(sysRatio), 18)
-        let batH = max(half * CGFloat(chgRatio), 18)
-        let sourceH = sysH + batH + gap
-        let sysY = half / 2
-        let batY = half + gap + half / 2
-        let startX: CGFloat = 38
-        let endX = w - 34
-
-        // 先把两条带画出来，再把源块盖在上面 —— 视觉上能量是从块里流出去的
-        // 系统流
-        drawBand(startX: startX, endX: endX, centerY: sysY, height: sysH,
-                 color: D.blue, cooling: false)
-        drawCapsule("\(String(format: "%.1f", sysW)) W", center: NSPoint(x: (startX + endX) / 2, y: sysY), color: D.blue)
-        drawEndIcon(x: w - 17, y: sysY, symbol: "desktopcomputer", text: S.system.v(Settings.shared.lang), color: D.blue)
-
-        // 电池流
-        if snapshot.isCharging && chgW > 0.3 {
-            drawBand(startX: startX, endX: endX, centerY: batY, height: batH,
-                     color: D.green, cooling: false)
-            drawCapsule("\(String(format: "%.1f", chgW)) W", center: NSPoint(x: (startX + endX) / 2, y: batY), color: D.green)
-            drawEndIcon(x: w - 17, y: batY, symbol: "battery.100.bolt", text: S.charge.v(Settings.shared.lang), color: D.green)
+        // 带子先画，节点卡片盖在两端
+        drawBand(centerY: sysY, height: sysH, color: D.blue)
+        if charging {
+            drawBand(centerY: batY, height: chgH, color: D.green)
         } else {
-            // 插着电但不充电：一条淡淡的待机带
-            drawBand(startX: startX, endX: endX, centerY: batY, height: 4,
-                     color: D.tertiary, cooling: true, dots: false, sweep: false)
-            drawEndIcon(x: w - 17, y: batY, symbol: "battery.100", text: S.idle.v(Settings.shared.lang), color: D.tertiary)
+            drawBand(centerY: batY, height: 6, color: D.tertiary, dots: false, sweep: false)
         }
 
-        drawSourceBlock(x: 0, y: (h - sourceH) / 2, height: sourceH,
-                        watts: snapshot.wallW, symbol: "powerplug.fill", color: D.label)
+        drawNode(x: 0, centerY: h / 2, height: max(blockH, 46),
+                 symbol: "powerplug.fill", value: String(format: "%.1f W", snapshot.wallW), color: D.label)
+        drawNode(x: bounds.width - nodeW, centerY: sysY, height: max(sysH, 46),
+                 symbol: "desktopcomputer", value: S.system.v(Settings.shared.lang), color: D.blue)
+        if charging {
+            drawNode(x: bounds.width - nodeW, centerY: batY, height: max(chgH, 46),
+                     symbol: "battery.100.bolt", value: S.charge.v(Settings.shared.lang), color: D.green)
+            drawCapsule("\(String(format: "%.1f", chgW)) W", centerY: batY, bandHeight: chgH, color: D.green)
+        } else {
+            drawNode(x: bounds.width - nodeW, centerY: batY, height: 46,
+                     symbol: "battery.100", value: S.idle.v(Settings.shared.lang), color: D.tertiary)
+        }
+        drawCapsule("\(String(format: "%.1f", sysW)) W", centerY: sysY, bandHeight: sysH, color: D.blue)
+
+        let tail: String
+        if charging {
+            tail = "\(S.toFull.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToFull))"
+        } else if snapshot.percent >= 99 {
+            tail = S.full.v(Settings.shared.lang)
+        } else {
+            tail = "\(S.remaining.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToEmpty))"
+        }
+        drawCaption(below: top + blockH + 8, text: tail)
     }
 
-    private func drawBatteryOnly(w: CGFloat, h: CGFloat) {
+    /// 带子下方的一行小字（预计时间），顺便把竖向留白填掉
+    private func drawCaption(below y: CGFloat, text: String) {
+        let font = D.text(10)
+        let size = text.size(font)
+        guard y + size.height < bounds.height else { return }
+        text.draw(at: NSPoint(x: bounds.midX - size.width / 2, y: y),
+                  withAttributes: [.font: font, .foregroundColor: D.secondary])
+    }
+
+    // MARK: 放电：电池 → 系统
+
+    private func drawBatteryOnly() {
+        let h = bounds.height
         let batW = max(snapshot.batteryW, 0.1)
-        let centerY = h / 2
-        let bandH = max(min(h * 0.6, h * 0.6 * CGFloat(batW / 45.0)), 12)
-        let startX: CGFloat = 38
-        let endX = w - 34
+        let bh = bandHeight(batW)
+        let y = h / 2
 
-        drawBand(startX: startX, endX: endX, centerY: centerY, height: bandH,
-                 color: D.orange, cooling: false)
-        drawCapsule("\(String(format: "%.1f", batW)) W", center: NSPoint(x: (startX + endX) / 2, y: centerY), color: D.orange)
-        drawEndIcon(x: w - 17, y: centerY, symbol: "desktopcomputer",
-                    text: S.system.v(Settings.shared.lang), color: D.orange)
-        drawSourceBlock(x: 0, y: (h - bandH) / 2, height: bandH,
-                        watts: batW, symbol: "battery.100", color: D.orange)
+        drawBand(centerY: y, height: bh, color: D.orange)
+        drawNode(x: 0, centerY: y, height: max(bh, 46),
+                 symbol: "battery.75", value: String(format: "%.1f W", batW), color: D.orange)
+        drawNode(x: bounds.width - nodeW, centerY: y, height: max(bh, 46),
+                 symbol: "desktopcomputer", value: S.system.v(Settings.shared.lang), color: D.orange)
+        drawCapsule("\(String(format: "%.1f", batW)) W", centerY: y, bandHeight: bh, color: D.orange)
+        drawCaption(below: y + bh / 2 + 7, text: "\(S.remaining.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToEmpty))")
     }
 
-    // MARK: - 组件
+    // MARK: - 元件
 
-    private func drawSourceBlock(x: CGFloat, y: CGFloat, height: CGFloat,
-                                 watts: Double, symbol: String, color: NSColor) {
-        let rect = NSRect(x: x, y: y, width: 46, height: max(height, 34))
-        NSColor.labelColor.withAlphaComponent(0.07).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8).fill()
+    private func drawBand(centerY: CGFloat, height: CGFloat, color: NSColor,
+                          dots: Bool = true, sweep: Bool = true) {
+        let rect = NSRect(x: startX, y: centerY - height / 2, width: max(endX - startX, 1), height: height)
+        let path = NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2)
 
-        let text = "\(fmtW(watts)) W"
-        let attrs: [NSAttributedString.Key: Any] = [.font: D.rounded(12), .foregroundColor: D.label]
-        let size = text.size(D.rounded(12))
-        let iconSize = Icon.tinted(symbol, color: color, size: 14)?.size ?? .zero
-        let blockH = iconSize.height + 3 + size.height
-        let top = rect.midY - blockH / 2
-        if let img = Icon.tinted(symbol, color: color, size: 14) {
-            img.draw(in: NSRect(x: rect.midX - iconSize.width / 2, y: top,
-                                width: iconSize.width, height: iconSize.height))
-        }
-        text.draw(at: NSPoint(x: rect.midX - size.width / 2, y: top + iconSize.height + 3), withAttributes: attrs)
-    }
-
-    private func bandPath(startX: CGFloat, endX: CGFloat, centerY: CGFloat, height: CGFloat) -> NSBezierPath {
-        let half = height / 2
-        let mid = (startX + endX) / 2
-        let p = NSBezierPath()
-        p.move(to: NSPoint(x: startX, y: centerY - half))
-        p.curve(to: NSPoint(x: endX, y: centerY - half),
-                controlPoint1: NSPoint(x: mid, y: centerY - half - 2),
-                controlPoint2: NSPoint(x: mid, y: centerY - half - 2))
-        p.curve(to: NSPoint(x: endX, y: centerY + half),
-                controlPoint1: NSPoint(x: endX + 4, y: centerY),
-                controlPoint2: NSPoint(x: endX + 4, y: centerY))
-        p.curve(to: NSPoint(x: startX, y: centerY + half),
-                controlPoint1: NSPoint(x: mid, y: centerY + half + 2),
-                controlPoint2: NSPoint(x: mid, y: centerY + half + 2))
-        p.curve(to: NSPoint(x: startX, y: centerY - half),
-                controlPoint1: NSPoint(x: startX - 4, y: centerY),
-                controlPoint2: NSPoint(x: startX - 4, y: centerY))
-        p.close()
-        return p
-    }
-
-    private func drawBand(startX: CGFloat, endX: CGFloat, centerY: CGFloat, height: CGFloat,
-                          color: NSColor, cooling: Bool, dots: Bool = true, sweep: Bool = true) {
-        let path = bandPath(startX: startX, endX: endX, centerY: centerY, height: height)
-
-        // 主体渐变（不做每帧高斯模糊——那是 CPU 的大头）
-        let grad = NSGradient(colors: [color.withAlphaComponent(0.12),
-                                       color.withAlphaComponent(0.34),
-                                       color.withAlphaComponent(0.12)])
-        grad?.draw(in: path, angle: 0)
-        color.withAlphaComponent(0.28).setStroke()
+        NSGradient(colors: [color.withAlphaComponent(0.20),
+                            color.withAlphaComponent(0.46),
+                            color.withAlphaComponent(0.20)])?.draw(in: path, angle: 0)
+        color.withAlphaComponent(0.30).setStroke()
         path.lineWidth = 0.5
         path.stroke()
 
-        guard dots, height > 8 else { return }
-        // 流动的粒子
+        guard dots, height > 12 else { return }
         let n = 6
         for i in 0..<n {
             let t = (CGFloat(i) / CGFloat(n) + phase).truncatingRemainder(dividingBy: 1)
-            let x = startX + (endX - startX) * t
-            let wob = sin(t * .pi * 2) * 1.5
-            let alpha = sin(t * .pi) * 0.65 + 0.1
-            let size = 2.5 + sin(t * .pi) * 1.4
-            let r = NSRect(x: x - size / 2, y: centerY + wob - size / 2, width: size, height: size)
+            let x = startX + 14 + (endX - startX - 28) * t
+            let alpha = sin(t * .pi) * 0.65 + 0.25
+            let d: CGFloat = 3.2
             color.withAlphaComponent(alpha).setFill()
-            NSBezierPath(ovalIn: r).fill()
+            NSBezierPath(ovalIn: NSRect(x: x - d / 2, y: centerY - d / 2, width: d, height: d)).fill()
         }
 
-        // 高光扫过
+        // 方向箭头：贴在带子右端内侧
+        let arrowH = min(height * 0.42, 12)
+        let ax = endX - 9
+        let arrow = NSBezierPath()
+        arrow.move(to: NSPoint(x: ax - 4, y: centerY - arrowH / 2))
+        arrow.line(to: NSPoint(x: ax + 3, y: centerY))
+        arrow.line(to: NSPoint(x: ax - 4, y: centerY + arrowH / 2))
+        arrow.lineWidth = 1.6
+        arrow.lineCapStyle = .round
+        arrow.lineJoinStyle = .round
+        color.withAlphaComponent(0.85).setStroke()
+        arrow.stroke()
+
         guard sweep else { return }
         NSGraphicsContext.saveGraphicsState()
         path.addClip()
         let bandW = endX - startX
         let hx = startX + bandW * phase
-        let rect = NSRect(x: hx - bandW * 0.15, y: centerY - height / 2, width: bandW * 0.3, height: height)
-        let hi = NSGradient(colors: [color.withAlphaComponent(0), color.withAlphaComponent(0.16), color.withAlphaComponent(0)])
-        hi?.draw(in: rect, angle: 0)
+        let hi = NSGradient(colors: [color.withAlphaComponent(0), color.withAlphaComponent(0.14), color.withAlphaComponent(0)])
+        hi?.draw(in: NSRect(x: hx - bandW * 0.14, y: centerY - height / 2, width: bandW * 0.28, height: height), angle: 0)
         NSGraphicsContext.restoreGraphicsState()
     }
 
-    private func drawCapsule(_ text: String, center: NSPoint, color: NSColor) {
-        let font = D.rounded(11)
-        let size = text.size(font)
-        let padX: CGFloat = 7, padY: CGFloat = 2.5
-        let rect = NSRect(x: center.x - size.width / 2 - padX, y: center.y - size.height / 2 - padY,
-                          width: size.width + padX * 2, height: size.height + padY * 2)
-        color.withAlphaComponent(0.78).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
-        text.draw(at: NSPoint(x: rect.minX + padX, y: rect.minY + padY - 0.5),
-                  withAttributes: [.font: font, .foregroundColor: NSColor.white])
+    /// 两端统一的节点卡片：图标在上、文字在下，整体垂直居中
+    private func drawNode(x: CGFloat, centerY: CGFloat, height: CGFloat,
+                          symbol: String, value: String, color: NSColor) {
+        let rect = NSRect(x: x, y: centerY - height / 2, width: nodeW, height: height)
+        NSColor.labelColor.withAlphaComponent(0.07).setFill()
+        let path = NSBezierPath(roundedRect: rect, xRadius: 9, yRadius: 9)
+        path.fill()
+        NSColor.labelColor.withAlphaComponent(0.05).setStroke()
+        path.lineWidth = 0.5
+        path.stroke()
+
+        let isWord = !value.contains("W")
+        let font = isWord ? D.text(9) : D.rounded(11, .medium)
+        let textSize = value.size(font)
+        let iconSize = Icon.tinted(symbol, color: color, size: 14)?.size ?? .zero
+        let stackH = iconSize.height + 3 + textSize.height
+        let top = rect.midY - stackH / 2
+
+        if let img = Icon.tinted(symbol, color: color, size: 14) {
+            img.draw(in: NSRect(x: rect.midX - iconSize.width / 2, y: top,
+                                width: iconSize.width, height: iconSize.height))
+        }
+        value.draw(at: NSPoint(x: rect.midX - textSize.width / 2, y: top + iconSize.height + 3),
+                   withAttributes: [.font: font, .foregroundColor: D.secondary])
     }
 
-    private func drawEndIcon(x: CGFloat, y: CGFloat, symbol: String, text: String, color: NSColor) {
-        if let img = Icon.tinted(symbol, color: color, size: 16) {
-            let sz = img.size
-            img.draw(in: NSRect(x: x - sz.width / 2, y: y - sz.height / 2 - 5, width: sz.width, height: sz.height))
-        }
-        let font = D.text(9)
+    /// 数字胶囊：高度跟着带子走但永远留 5pt 余量，保证"嵌在带子里"
+    private func drawCapsule(_ text: String, centerY: CGFloat, bandHeight: CGFloat, color: NSColor) {
+        let font = D.rounded(11.5, .semibold)
         let size = text.size(font)
-        text.draw(at: NSPoint(x: x - size.width / 2, y: y + 9),
-                  withAttributes: [.font: font, .foregroundColor: D.secondary])
+        let capH = min(size.height + 7, bandHeight - 4)
+        let capW = size.width + 18
+        let rect = NSRect(x: (startX + endX) / 2 - capW / 2, y: centerY - capH / 2, width: capW, height: capH)
+        color.withAlphaComponent(0.95).setFill()
+        let capPath = NSBezierPath(roundedRect: rect, xRadius: capH / 2, yRadius: capH / 2)
+        capPath.fill()
+        NSColor.white.withAlphaComponent(0.18).setStroke()
+        capPath.lineWidth = 0.5
+        capPath.stroke()
+        text.draw(at: NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2),
+                  withAttributes: [.font: font, .foregroundColor: NSColor.white])
     }
 }

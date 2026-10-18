@@ -135,6 +135,12 @@ final class MetricCard: NSView {
     }
     required init?(coder: NSCoder) { fatalError() }
 
+    /// 没数据时整张卡"熄灯"，别让灰色占位看起来像激活的模块
+    func setDimmed(_ dim: Bool) {
+        iconView?.alphaValue = dim ? 0.4 : 1
+        titleLabel.alphaValue = dim ? 0.55 : 1
+    }
+
     func update(title: String? = nil, value: String, valueColor: NSColor = D.label) {
         if let t = title { titleLabel.setText(t) }
         valueLabel.setText(value)

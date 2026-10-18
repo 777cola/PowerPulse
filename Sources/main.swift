@@ -562,7 +562,8 @@ extension PopoverController {
                 if let rep = container.bitmapImageRepForCachingDisplay(in: container.bounds) {
                     container.cacheDisplay(in: container.bounds, to: rep)
                     if let data = rep.representation(using: .png, properties: [:]) {
-                        let path = "\(dir)/\(tag)-\(i).png"
+                        let prefix = CommandLine.arguments.contains("--dark") ? "dark-" : "light-"
+                        let path = "\(dir)/\(prefix)\(tag)-\(i).png"
                         try? data.write(to: URL(fileURLWithPath: path))
                     }
                 }
@@ -600,6 +601,12 @@ let app = NSApplication.shared
 if let idx = CommandLine.arguments.firstIndex(of: "--selftest"), idx + 1 < CommandLine.arguments.count {
     dbg("boot")
     app.setActivationPolicy(.accessory)
+    // 深色/浅色要在建视图之前设定，否则 layer 的 CGColor 会按旧外观解析
+    if CommandLine.arguments.contains("--dark") {
+        app.appearance = NSAppearance(named: .darkAqua)
+    } else if CommandLine.arguments.contains("--light") {
+        app.appearance = NSAppearance(named: .aqua)
+    }
     let pc = PopoverController()
     dbg("popover built")
     pc.renderAll(to: CommandLine.arguments[idx + 1])
