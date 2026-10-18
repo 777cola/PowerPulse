@@ -435,7 +435,8 @@ final class SettingsPanel: Panel {
                            selected: set.menuBar.rawValue)
         menuRow.onChange = { i in set.menuBar = Settings.MenuBarMode(rawValue: i) ?? .pctAndW }
 
-        intervalRow = PopupRow(S.interval.v(l), options: ["1 s", "2 s", "5 s"],
+        let secSuffix = l == .en ? "s" : " 秒"
+        intervalRow = PopupRow(S.interval.v(l), options: ["1\(secSuffix)", "2\(secSuffix)", "5\(secSuffix)"],
                                selected: [1.0, 2.0, 5.0].firstIndex(of: set.interval) ?? 0)
         intervalRow.onChange = { i in set.interval = [1.0, 2.0, 5.0][max(0, min(i, 2))] }
 
@@ -477,13 +478,17 @@ final class SettingsPanel: Panel {
         sep.boxType = .separator
         sep.translatesAutoresizingMaskIntoConstraints = false
 
+        // 高温阈值紧跟"高温充电提醒"，逻辑上是一组
+        var alertRows: [NSView] = []
+        for (i, r) in notifRows.enumerated() {
+            alertRows.append(r)
+            if i == notifRows.count - 2 { alertRows.append(heatRow) }   // 高温提醒是倒数第二项
+        }
         let root = vstack([
             autostartRow,
             langRow, menuRow, intervalRow, retentionRow,
-            SectionTitle(S.energyTitle.v(l).isEmpty ? "" : (l == .en ? "Alerts" : "提醒"), symbol: "bell"),
-        ] + notifRows + [
-            heatRow,
-        ], spacing: 2)
+            SectionTitle(l == .en ? "Alerts" : (l == .tw ? "提醒" : "提醒"), symbol: "bell"),
+        ] + alertRows, spacing: 2)
         root.setCustomSpacing(10, after: autostartRow)
         root.setCustomSpacing(10, after: retentionRow)
         root.setCustomSpacing(2, after: root.arrangedSubviews.last!)

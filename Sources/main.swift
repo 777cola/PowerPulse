@@ -6,30 +6,43 @@ import Foundation
 final class PopoverController: NSObject {
     let popover = NSPopover()
     let container = NSView()
-    private let headerTitle = label("", font: D.text(13, .medium), color: D.label)
-    private var headerIcon = IconView("bolt.horizontal.fill", size: 12, color: D.secondary)
-    private let langButton = NSButton()
-    private(set) var panels: [Panel] = []
-    private var tabBar: TabBar!
-    private var current = 0
-    let panelHost = NSView()
-    private var hostHeight: NSLayoutConstraint!
 
-    private var titles: [Tri] = [S.powerFlow, S.monitor, S.history, S.adapter, S.settings]
-    private var symbols = ["bolt.horizontal", "cpu", "clock.arrow.circlepath", "powerplug", "gearshape"]
+    // 视图层级只搭一次，语言切换时只换"内容"，绝不重建 contentViewController
+    // （重建会让 AppKit 把旧层和新层一起留在弹窗里，表现为中英文重影）
+    private let root = NSView()
+    private let headerTitle = label("", font: D.text(13, .medium), color: D.label)
+    private let headerIcon = IconView("bolt.horizontal", size: 12, color: D.secondary)
+    private let langButton = NSButton()
+    private let panelHost = NSView()
+    private var hostHeight: NSLayoutConstraint!
+    private var tabBar: TabBar!
+    private(set) var panels: [Panel] = []
+    private var current = 0
+
+    private let titles: [Tri] = [S.powerFlow, S.monitor, S.history, S.adapter, S.settings]
+    private let symbols = ["bolt.horizontal", "cpu", "clock.arrow.circlepath", "powerplug", "gearshape"]
 
     var onSizeChange: ((NSSize) -> Void)?
 
     override init() {
         super.init()
-        build()
+        assembleOnce()
+        rebuildPanels()
+        show(0, resizeOnly: true)
+
+        let vc = NSViewController()
+        vc.view = container
+        container.frame = NSRect(origin: .zero, size: sizeFor(current))
+        popover.contentViewController = vc
+        popover.behavior = .transient
+        popover.animates = true
     }
 
-    private func build() {
-        let root = NSView(frame: NSRect(x: 0, y: 0, width: D.width, height: 420))
+    // MARK: 搭骨架（只跑一次）
+
+    private func assembleOnce() {
         root.wantsLayer = true
 
-        // 玻璃底
         let glass = NSVisualEffectView()
         glass.material = .hudWindow
         glass.blendingMode = .behindWindow
@@ -39,7 +52,6 @@ final class PopoverController: NSObject {
         root.addSubview(glass)
         glass.pin(to: root)
 
-        // 顶部标题栏
         let header = NSView()
         header.translatesAutoresizingMaskIntoConstraints = false
         header.heightAnchor.constraint(equalToConstant: 38).isActive = true
@@ -63,12 +75,10 @@ final class PopoverController: NSObject {
         header.addSubview(head)
         head.pin(to: header, insets: .init(top: 0, left: D.pad, bottom: 0, right: D.pad))
 
-        // 面板容器
         panelHost.translatesAutoresizingMaskIntoConstraints = false
         hostHeight = panelHost.heightAnchor.constraint(equalToConstant: 300)
         hostHeight.isActive = true
 
-        // Tab
         tabBar = TabBar(items: zip(symbols, titles).map { TabBar.Item(symbol: $0.0, title: $0.1) })
         tabBar.onSelect = { [weak self] i in self?.show(i) }
 
@@ -81,7 +91,11 @@ final class PopoverController: NSObject {
 
         container.addSubview(root)
         root.pin(to: container)
+    }
 
+    /// 只重建面板（语言变了才有必要）
+    func rebuildPanels() {
+        panels.forEach { $0.removeFromSuperview() }
         panels = [NowPanel(), MonitorPanel(), HistoryPanel(), AdapterPanel(), SettingsPanel()]
         for p in panels {
             p.translatesAutoresizingMaskIntoConstraints = false
@@ -90,32 +104,32 @@ final class PopoverController: NSObject {
             panelHost.addSubview(p)
             p.pin(to: panelHost)
         }
-        show(0)
-
-        let vc = NSViewController()
-        vc.view = container
-        container.setFrameSize(NSSize(width: D.width, height: 420))
-        popover.contentViewController = vc
-        popover.behavior = .transient
-        popover.animates = true
     }
+
+    private func sizeFor(_ idx: Int) -> NSSize {
+        NSSize(width: D.width, height: 38 + panels[idx].preferredHeight + 52)
+    }
+
+    // MARK: 切面板
 
     func select(_ idx: Int) { show(idx) }
     var panelCount: Int { panels.count }
-    func panelsHeight(_ i: Int) -> CGFloat { 38 + panels[i].preferredHeight + 52 }
+    func panelsHeight(_ i: Int) -> CGFloat { sizeFor(i).height }
 
-    private func show(_ idx: Int) {
+    private func show(_ idx: Int, resizeOnly: Bool = false) {
+        guard panels.indices.contains(idx) else { return }
         current = idx
         for (i, p) in panels.enumerated() { p.isHidden = i != idx }
         headerTitle.stringValue = titles[idx].v(Settings.shared.lang)
         headerIcon.image = Icon.tinted(symbols[idx], color: D.secondary, size: 12)
         tabBar.highlight(idx)
+        if resizeOnly { tabBar.needsDisplay = true }
 
-        let h = panels[idx].preferredHeight
-        hostHeight.constant = h
-        container.frame.size = NSSize(width: D.width, height: 38 + h + 52)
-        popover.contentSize = container.frame.size
-        onSizeChange?(container.frame.size)
+        hostHeight.constant = panels[idx].preferredHeight
+        let size = sizeFor(idx)
+        container.frame.size = size
+        popover.contentSize = size
+        onSizeChange?(size)
     }
 
     @objc private func cycleLang() {
@@ -125,21 +139,20 @@ final class PopoverController: NSObject {
 
     func refreshLangButton() {
         langButton.title = Settings.shared.lang.short
-        langButton.sizeToFit()
     }
 
-    /// 语言切换后整体重建，避免残留旧文案
+    /// 语言切换：只换文案与面板，不碰视图结构
     func rebuild() {
+        refreshLangButton()
+        tabBar.relabel()
         let idx = current
-        container.subviews.forEach { $0.removeFromSuperview() }
-        panels = []
-        build()
-        show(min(idx, panels.count - 1))
+        rebuildPanels()
+        show(idx)
     }
 
     func refresh(power: PowerSnapshot, adapter: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
-        guard let p = panels[safe: current] else { return }
-        p.refresh(power: power, adapter: adapter, stats: stats, energy: energy)
+        guard panels.indices.contains(current) else { return }
+        panels[current].refresh(power: power, adapter: adapter, stats: stats, energy: energy)
     }
 }
 
@@ -192,7 +205,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NotificationCenter.default.addObserver(forName: .ppSettingsChanged, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
-            self.popover.refreshLangButton()
             self.popover.rebuild()
             self.updateStatusTitle()
         }
@@ -208,8 +220,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 调试：启动后自动展开面板，便于截图核对
         if CommandLine.arguments.contains("--open-popover") {
             func snap(_ tag: String) {
+                let winCount = NSApp.windows.count
+                let subCount = popover.container.subviews.count
+                _ = winCount
                 let w = statusItem.button?.window
-                let line = "[\(tag)] btn=\(statusItem.button?.bounds ?? .zero) win=\(w?.frame ?? .zero) screen=\(w?.screen?.frame ?? .zero) shown=\(popover.popover.isShown)\n"
+                let line = "[\(tag)] shown=\(popover.popover.isShown) containerSubviews=\(subCount) windows=\(winCount) win=\(w?.frame ?? .zero)\n"
                 if let h = FileHandle(forWritingAtPath: "/tmp/pp_window.log") {
                     h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); h.closeFile()
                 } else {
@@ -221,6 +236,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 self.togglePopover()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { snap("after-toggle") }
+                // 连切三次语言，确认不会叠层
+                for (i, lang) in [Lang.tw, .en, .zh].enumerated() {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 + Double(i) * 0.6) {
+                        Settings.shared.lang = lang
+                        NotificationCenter.default.post(name: .ppSettingsChanged, object: nil)
+                    }
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) { snap("after-3-lang-switch") }
             }
         }
     }
@@ -452,6 +475,22 @@ final class ProbeEnergy {
     }
 }
 
+/// 递归找出超出父视图边界 / 宽度不够的控件
+func auditOverflow(_ v: NSView, path: String = "") -> [String] {
+    var out: [String] = []
+    for sub in v.subviews where !sub.isHidden {
+        let f = sub.frame
+        let b = v.bounds
+        let name = String(describing: type(of: sub))
+        let escaped = f.maxX > b.width + 0.5 || f.minX < -0.5 || f.maxY > b.height + 0.5 || f.minY < -0.5
+        if escaped {
+            out.append("\(path)/\(name) frame=\(f) parent=\(b.size)")
+        }
+        out += auditOverflow(sub, path: path + "/" + name)
+    }
+    return out
+}
+
 func dbg(_ s: String) {
     FileHandle.standardError.write(("[selftest] " + s + "\n").data(using: .utf8)!)
 }
@@ -483,25 +522,49 @@ extension PopoverController {
         print("energy: " + energy.prefix(3).map { "\($0.name) \(Int($0.milliwatts))mW" }.joined(separator: ", "))
 
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-        for i in 0..<panelCount {
-            select(i)
-            let size = NSSize(width: D.width, height: panelsHeight(i))
-            container.setFrameSize(size)
-            container.needsLayout = true
-            container.layoutSubtreeIfNeeded()
-            refresh(power: power, adapter: adapter, stats: stats, energy: energy)
-            container.needsLayout = true
-            container.layoutSubtreeIfNeeded()
-            print("panel\(i) fitting=\(panels[i].fittingSize) preferred=\(panels[i].preferredHeight)")
-            if let rep = container.bitmapImageRepForCachingDisplay(in: container.bounds) {
-                container.cacheDisplay(in: container.bounds, to: rep)
-                if let data = rep.representation(using: .png, properties: [:]) {
-                    let path = "\(dir)/panel\(i).png"
-                    try? data.write(to: URL(fileURLWithPath: path))
-                            print("wrote \(path) \(Int(size.width))x\(Int(size.height)) container=\(container.frame) panel=\(panels[i].frame) host=\(panelHost.frame) root=\(container.subviews.first?.frame ?? .zero)")
+
+        func render(_ tag: String) {
+            for i in 0..<panelCount {
+                select(i)
+                let size = NSSize(width: D.width, height: panelsHeight(i))
+                container.setFrameSize(size)
+                container.needsLayout = true
+                container.layoutSubtreeIfNeeded()
+                refresh(power: power, adapter: adapter, stats: stats, energy: energy)
+                container.needsLayout = true
+                container.layoutSubtreeIfNeeded()
+                if let rep = container.bitmapImageRepForCachingDisplay(in: container.bounds) {
+                    container.cacheDisplay(in: container.bounds, to: rep)
+                    if let data = rep.representation(using: .png, properties: [:]) {
+                        let path = "\(dir)/\(tag)-\(i).png"
+                        try? data.write(to: URL(fileURLWithPath: path))
+                    }
+                }
+            }
+            print("[render] \(tag) container.subviews=\(container.subviews.count)")
+            for i in 0..<panelCount {
+                let issues = auditOverflow(panels[i])
+                if !issues.isEmpty {
+                    print("  ⚠️ panel\(i) overflow \(issues.count):")
+                    issues.prefix(6).forEach { print("     \($0)") }
                 }
             }
         }
+
+        for lang in Lang.allCases {
+            Settings.shared.lang = lang
+            rebuild()
+            render(lang.rawValue)
+        }
+
+        // 反复切语言，视图数量必须保持恒定（以前会越切越叠）
+        Settings.shared.lang = .zh
+        rebuild()
+        let before = container.subviews.count
+        for _ in 0..<6 { rebuild() }
+        print("[rebuild] 7 次重建后 container.subviews \(before) -> \(container.subviews.count)（应相等）")
+        render("final")
+        print("wrote panels to \(dir)")
     }
 }
 
