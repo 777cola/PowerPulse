@@ -505,7 +505,9 @@ func auditOverflow(_ v: NSView, path: String = "") -> [String] {
         let f = sub.frame
         let b = v.bounds
         let name = String(describing: type(of: sub))
-        let escaped = f.maxX > b.width + 0.5 || f.minX < -0.5 || f.maxY > b.height + 0.5 || f.minY < -0.5
+        // 容差 3pt：NSTextField 的 alignment rect 天然带 ±2pt 内缩，不算溢出
+        let tol: CGFloat = 3
+        let escaped = f.maxX > b.width + tol || f.minX < -tol || f.maxY > b.height + tol || f.minY < -tol
         if escaped {
             out.append("\(path)/\(name) frame=\(f) parent=\(b.size)")
         }
