@@ -10,6 +10,7 @@ import * as A from "/Users/qjh/.hermes/skills/creative/anatomy/kit/audit.mjs";
 import { kitScript } from "/Users/qjh/.hermes/skills/creative/anatomy/scripts/inline-kit.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const OUT = join(HERE, "../../docs/assets");
 const W = 600;
 const H = 420;
 const AZ = 40;
@@ -46,7 +47,7 @@ const REC = { x: 40, y: -70, w: 66, d: 78, r: 3 };
 const CASE_TOP = 24;
 const DECK = { x: 40, y: -66, w: 66, d: 74, r: 2 };
 const DECK_TOP = 24.6;
-const PAPER = { x: 46, y: -56, w: 54, d: 56, r: 0.6 };
+const PAPER = { x: 46, y: -62, w: 54, d: 68, r: 0.6 };
 const PAPER_Z = 25.1;
 const SUPPLY_Y = -58;
 const TAKE_Y = 2;
@@ -62,7 +63,7 @@ const BOX = { x: 52, y: 14, w: 56, d: 32, r: 2 };
 const BOX_TOP = 12;
 
 const BELL = [128, -56];
-const PIVOT = [148, -44];
+const PIVOT = [148, -56];
 const ESC = [-72, 44];
 const ESC_R = 12;
 
@@ -113,7 +114,7 @@ function cyl(name, x, y, r, z, h, style = {}, { steps = 40, bevel = 0, inner = "
 function turned(name, F, profile, style = {}, { steps, smooth, inner = "", extra = "", bias = 0, part = null } = {}) {
   const paths = G.solidOf(profile, F, P, { steps, smooth });
   const mid = (profile[0][0] + profile[profile.length - 1][0]) / 2;
-  add(name, G.add3(F.o, G.mul3(F.a, mid)), S(paths, { tone: style.tone ?? "hi", crease: style.crease, lit: style.lit, inner }) + extra, [A.solid(F, profile, { name })], { bias, part });
+  add(name, G.add3(F.o, G.mul3(F.a, mid)), S(paths, { tone: style.tone ?? "hi", crease: style.crease, lit: style.lit, className: style.className, inner }) + extra, [A.solid(F, profile, { name })], { bias, part });
   return paths;
 }
 
@@ -297,7 +298,7 @@ function dial() {
   });
   const bez = [[22, 23.7], [22, 26.0], [23.2, 26.45], [25.0, 26.45], [25.4, 25.9], [25.4, 23.7], [22, 23.7]];
   add("dial.bezel", [x, y, 23.7], S(G.lathe(bez, DIAL_F, P, { steps: 76 }), {
-    tone: "hi", crease: "lo",
+    tone: "hi", crease: "lo", className: "pb-strong",
     inner: Ln(k.knurl(x, y, 26.45, 23.6, 24.9, 84, P, 0.2), { tone: "lo" }) +
       Ln(G.arcOf(DIAL_F, 22.4, 26.2, P), { tone: "mid" }),
   }), [A.lathe(DIAL_F, bez, { name: "dial.bezel" })]);
@@ -369,7 +370,7 @@ function recorder() {
   add("rec.pen", [PEN_X0, PEN_Y - 2, 31], penSvg(), [
     A.box([PEN_X0 - 6, PEN_Y - 7, BAR_Z], [PEN_X0 + 6, PEN_Y + 1.5, 36.2], { name: "rec.carriage" }),
     A.box([PEN_X0 - 0.7, PEN_Y - 1, PAPER_Z + 1.2], [PEN_X0 + 0.7, PEN_Y + 1, BAR_Z], { name: "rec.arm" }),
-    A.disc(G.frameOf([PEN_X0, PEN_Y, PAPER_Z + 0.1], [0, 0, 1], [1, 0, 0], [0, 1, 0]), 0, 1.1, 1.1, { name: "rec.nib" }),
+    A.disc(G.frameOf([PEN_X0, PEN_Y, PAPER_Z + 0.1], [0, 0, 1], [1, 0, 0], [0, 1, 0]), 0, 1.3, 1.4, { name: "rec.nib" }),
   ], { bias: 3, part: "pen" });
 
   const lampF = G.frameAlong([REC.x + 10, REC.y + REC.d, 17], [0, 1, 0]);
@@ -396,7 +397,7 @@ function penSvg() {
   out.push(S(k.slabOf({ x: x - 6, y: PEN_Y - 7, w: 12, d: 8.5, r: 1.2 }, BAR_Z, 5, P, 3, 0.4), { tone: "hi" }));
   out.push(S(k.slabOf({ x: x - 3.4, y: PEN_Y + 1.2, w: 6.8, d: 2.4, r: 0.8 }, BAR_Z + 1.4, 3.2, P, 3), { tone: "mid" }));
   out.push(S(k.slabOf({ x: x - 0.7, y: PEN_Y - 1, w: 1.4, d: 2, r: 0.3 }, PAPER_Z + 1.2, BAR_Z - PAPER_Z - 1.2, P, 2), { tone: "mid", crease: "none" }));
-  out.push(S(k.cylinder(x, PEN_Y, 1.1, PAPER_Z + 0.1, 1.1, P, 16), { tone: "hi", lit: true }));
+  out.push(S(k.cylinder(x, PEN_Y, 1.4, PAPER_Z + 0.1, 1.3, P, 16), { tone: "hi", lit: true }));
   return out.join("");
 }
 
@@ -436,24 +437,24 @@ function bell() {
   const BF = G.frameOf([x, y, 0], [0, 0, 1], [1, 0, 0], [0, 1, 0]);
   turned("bell.body", BF, [
     [20.4, 3.4], [21.4, 9.2, 1], [23.6, 9.4, 1], [30, 6.2, 1], [32.6, 2.2, 1], [33.4, 0],
-  ], { tone: "hi" }, {
+  ], { tone: "hi", className: "pb-strong" }, {
     steps: 56, smooth: true,
     inner: Ln(G.arcOf(BF, 21.6, 9.3, P), { tone: "mid" }),
   });
-  cyl("bell.pivot", PIVOT[0], PIVOT[1], 2.4, 0, 19, { tone: "mid" }, { steps: 22 });
+  cyl("bell.pivot", PIVOT[0], PIVOT[1], 2.6, 0, 19, { tone: "mid" }, { steps: 22 });
   add("bell.hammer", [PIVOT[0] - 8, PIVOT[1] + 1, 21], hammerSvg(), [
-    A.box([PIVOT[0] - 14, PIVOT[1] - 1.6, 19], [PIVOT[0] + 1, PIVOT[1] + 1.6, 21], { name: "bell.arm" }),
-    A.disc(G.frameOf([PIVOT[0] - 13.2, PIVOT[1], 21], [0, 0, 1], [1, 0, 0], [0, 1, 0]), 0, 3.2, 2.4, { name: "bell.head" }),
+    A.box([PIVOT[0] - 9, PIVOT[1] - 2, 19], [PIVOT[0] + 1, PIVOT[1] + 2, 22], { name: "bell.arm" }),
+    A.disc(G.frameOf([PIVOT[0] - 6.5, PIVOT[1], 22], [0, 0, 1], [1, 0, 0], [0, 1, 0]), 0, 3.4, 2.6, { name: "bell.head" }),
   ], { bias: 1, part: "hammer" });
-  cyl("bell.pivotCap", PIVOT[0], PIVOT[1], 3.1, 21, 1.2, { tone: "mid" }, { steps: 22 });
+  cyl("bell.pivotCap", PIVOT[0], PIVOT[1], 3.3, 22, 1.2, { tone: "mid" }, { steps: 22 });
 }
 
 function hammerSvg() {
   const [px, py] = PIVOT;
   const out = [];
-  out.push(S(k.slabOf({ x: px - 14, y: py - 1.6, w: 15, d: 3.2, r: 1.2 }, 19, 2, P, 3, 0.3), { tone: "mid" }));
-  out.push(S(k.cylinder(px - 13.2, py, 2.4, 21, 3.2, P, 20), { tone: "hi", lit: true }));
-  out.push(S(k.cylinder(px - 13.2, py, 1.2, 21, 3.2, P, 12), { tone: "hi" }));
+  out.push(S(k.slabOf({ x: px - 9, y: py - 2, w: 10, d: 4, r: 1.4 }, 19, 3, P, 3, 0.4), { tone: "mid" }));
+  out.push(S(k.cylinder(px - 6.5, py, 2.6, 22, 3.4, P, 20), { tone: "hi", lit: true }));
+  out.push(S(k.cylinder(px - 6.5, py, 1.2, 22.4, 3, P, 12), { tone: "mid" }));
   out.push(S(k.slabOf({ x: px - 1.8, y: py - 2.2, w: 3.6, d: 4.4, r: 0.8 }, 21, 1, P, 3), { tone: "mid" }));
   return out.join("");
 }
@@ -475,15 +476,15 @@ function toothed(angle) {
 function ratchetSvg(angle) {
   const ring = toothed(angle);
   const paths = k.extrude(ring, 10, 3.4, P, { convex: false }, 2, 0);
-  return S(paths, { tone: "hi" }) + Ln(k.planOutline({ x: ESC[0] - 3.4, y: ESC[1] - 3.4, w: 6.8, d: 6.8, r: 1.1 }, 13.4, P, 4), { tone: "faint" });
+  return S(paths, { tone: "hi", className: "pb-strong" }) + Ln(k.planOutline({ x: ESC[0] - 3.4, y: ESC[1] - 3.4, w: 6.8, d: 6.8, r: 1.1 }, 13.4, P, 4), { tone: "faint" });
 }
 
 function pawlSvg() {
-  const px = ESC[0], py = ESC[1] + 17;
+  const px = ESC[0], py = ESC[1] + 20;
   const out = [];
-  out.push(S(k.slabOf({ x: px - 2.4, y: py - 11.6, w: 4.8, d: 14, r: 1.2 }, 13.5, 2, P, 3, 0.3), { tone: "mid" }));
-  out.push(S(k.slabOf({ x: px - 3.4, y: py - 14.2, w: 6.8, d: 4, r: 1.4 }, 13.5, 3, P, 3, 0.4), { tone: "mid" }));
-  out.push(S(k.cylinder(px, py, 2.8, 15.5, 1, P, 20), { tone: "hi" }));
+  out.push(S(k.slabOf({ x: px - 2.4, y: py - 9, w: 4.8, d: 11, r: 1.2 }, 13.5, 2, P, 3, 0.3), { tone: "mid" }));
+  out.push(S(k.slabOf({ x: px - 1.5, y: py - 10.4, w: 3, d: 3.4, r: 0.8 }, 13.5, 2.4, P, 3, 0.3), { tone: "hi" }));
+  out.push(S(k.cylinder(px, py, 2.8, 15.5, 1, P, 20), { tone: "mid" }));
   return out.join("");
 }
 
@@ -497,10 +498,10 @@ function escapement() {
   cyl("esc.hub", ESC[0], ESC[1], 2.4, 13.4, 1.6, { tone: "hi" }, { steps: 18 });
   cyl("esc.pin", ESC[0], ESC[1], 1, 15, 2.2, { tone: "hi" }, { steps: 14 });
 
-  const py = ESC[1] + 17;
+  const py = ESC[1] + 20;
   cyl("esc.pawlPost", ESC[0], py, 2.4, 0, 13.5, { tone: "mid" }, { steps: 20 });
-  add("esc.pawl", [ESC[0], py - 5, 14.5], pawlSvg(), [
-    A.box([ESC[0] - 2.4, py - 11.6, 13.5], [ESC[0] + 2.4, py + 2.4, 15.5], { name: "esc.pawl" }),
+  add("esc.pawl", [ESC[0], py - 4, 14.5], pawlSvg(), [
+    A.box([ESC[0] - 2.4, py - 9, 13.5], [ESC[0] + 2.4, py + 2, 15.5], { name: "esc.pawl" }),
     A.disc(G.frameOf([ESC[0], py, 15.5], [0, 0, 1], [1, 0, 0], [0, 1, 0]), 0, 1, 2.8, { name: "esc.pawlCap" }),
   ], { bias: 2, part: "pawl" });
 }
@@ -562,6 +563,7 @@ const PB_EDGE = ${PAPER.y + PAPER.d};
 const PB_SPEED = 1.6;
 const PB_MAX = 60;
 const PB_SYSTEM = 11.4;
+const PB_MEASURED = { wall: 33.7, charge: 22.2, temp: 34 };
 const PB_ESC = ${JSON.stringify(ESC)};
 const PB_PIVOT = ${JSON.stringify(PIVOT)};
 const stage = document.querySelector(".iso-stage");
@@ -601,7 +603,7 @@ function noiseAt(t0) {
 }
 
 let clock = 0, load = 33.7, target = 33.7, last = 0, frame = 0, visible = false, touring = true, idle = 0;
-let nextSample = 1, steps = 0, tapAge = 99;
+let nextSample = 1, steps = 0, tapAge = 99, interacting = false, selfTest = false;
 const HISTORY = [];
 for (let i = 26; i >= 0; i--) HISTORY.push({ t: -i, v: noiseAt(-i) });
 
@@ -646,7 +648,7 @@ function draw(now) {
   hammerEl.setAttribute("transform", rotZ([PB_PIVOT[0], PB_PIVOT[1], 21], -swing));
   const phase = now % 1;
   const lift = phase < 0.1 ? Math.sin((phase / 0.1) * Math.PI) * 5 : 0;
-  pawlEl.setAttribute("transform", rotZ([PB_ESC[0], PB_ESC[1] + 17, 15.5], lift));
+  pawlEl.setAttribute("transform", rotZ([PB_ESC[0], PB_ESC[1] + 20, 15.5], lift));
   ratchetEl.innerHTML = ratchetSvg(-((steps % 20) * Math.PI) / 10);
   const shift = (now * PB_SPEED) % 8;
   const g = PB_GRID;
@@ -654,10 +656,10 @@ function draw(now) {
     g.o[0] + g.v[0] * shift, g.o[1] + g.v[1] * shift].map((v) => Math.round(v * 1e4) / 1e4).join(" ") + ")");
   const d = traceD(now, load);
   if (d) traceEl.setAttribute("d", d);
-  const wall = load.toFixed(1);
-  const charge = Math.max(0, load - PB_SYSTEM).toFixed(1);
-  const temp = (32.4 + 2.4 * clamp(load / 42, 0, 1)).toFixed(0);
-  const text = wall + " W · " + charge + " W · " + temp + " ℃ · 92.9%";
+  const wall = (interacting ? load : PB_MEASURED.wall).toFixed(1);
+  const charge = (interacting ? Math.max(0, load - PB_SYSTEM) : PB_MEASURED.charge).toFixed(1);
+  const temp = (interacting ? 32.4 + 2.4 * clamp(load / 42, 0, 1) : PB_MEASURED.temp).toFixed(0);
+  const text = wall + " W IN · " + charge + " W TO BATTERY · " + temp + " °C · 92.9%";
   if (readout.textContent !== text) readout.textContent = text;
   stage.setAttribute("aria-valuenow", wall);
   stage.setAttribute("aria-valuetext", wall + " watts at the wall");
@@ -667,7 +669,7 @@ function tick(nowMs) {
   const dt = last ? Math.min((nowMs - last) / 1000, 1 / 30) : 1 / 60;
   last = nowMs;
   clock += dt;
-  if (touring) target = noiseAt(clock);
+  if (touring) target = 33.7 + 0.9 * Math.sin(clock * 0.9);
   load += (target - load) * (1 - Math.exp(-dt / 0.28));
   if (clock >= nextSample) {
     nextSample += 1;
@@ -675,6 +677,7 @@ function tick(nowMs) {
     HISTORY.push({ t: clock, v: load });
     while (HISTORY.length && (clock - HISTORY[0].t) * PB_SPEED > 70) HISTORY.shift();
     if (load > 40 && tapAge > 1.1) tapAge = 0;
+    if (!selfTest && clock > 2.2) { selfTest = true; tapAge = 0; }
   }
   tapAge += dt;
   draw(clock);
@@ -691,19 +694,25 @@ stage.addEventListener("pointermove", (event) => {
   const box = pbRoot.getBoundingClientRect();
   const share = clamp((event.clientX - box.left) / box.width, 0.08, 0.94);
   touring = false;
+  interacting = true;
   target = 6 + share * 54;
   clearTimeout(idle);
-  idle = setTimeout(() => { touring = !still.matches; }, 4200);
+  idle = setTimeout(() => { touring = !still.matches; interacting = false; }, 4200);
 });
-stage.addEventListener("pointerleave", () => { touring = !still.matches; clearTimeout(idle); });
+stage.addEventListener("pointerleave", () => {
+  touring = !still.matches;
+  clearTimeout(idle);
+  idle = setTimeout(() => { interacting = false; }, 1200);
+});
 stage.addEventListener("keydown", (event) => {
   const step = event.key === "ArrowRight" || event.key === "ArrowUp" ? 2 : event.key === "ArrowLeft" || event.key === "ArrowDown" ? -2 : 0;
   if (!step) return;
   event.preventDefault();
   touring = false;
+  interacting = true;
   target = clamp(target + step, 4, 58);
   clearTimeout(idle);
-  idle = setTimeout(() => { touring = !still.matches; }, 4200);
+  idle = setTimeout(() => { touring = !still.matches; interacting = false; }, 4200);
 });
 if (still.matches) { touring = false; load = 33.7; draw(0); }
 else run();
@@ -714,22 +723,33 @@ const PALETTE = `
   --anatomy-page:#f5f8fc;--anatomy-card:#ffffff;
   --anatomy-text:#475569;--anatomy-strong:#1A4B8C;--anatomy-muted:#64748b;
   --anatomy-paper:#ffffff;--anatomy-face:#fbfdff;--anatomy-top:#ffffff;
-  --anatomy-shade-0:#b7c9dd;--anatomy-shade-1:#d2dfee;--anatomy-shade-2:#e5eef8;--anatomy-shade-3:#f2f8fd;
+  --anatomy-shade-0:#a8bed6;--anatomy-shade-1:#c2d3e5;--anatomy-shade-2:#d9e5f2;--anatomy-shade-3:#edf4fa;
   --anatomy-lit-top:#fff1e2;--anatomy-lit-shade:#f8d0a8;
   --anatomy-hi:#1A4B8C;--anatomy-mid:#64748b;--anatomy-lo:#9db2ca;--anatomy-faint:#c9d8e8;--anatomy-lit:#E86C00;
   --anatomy-halo:#1A4B8C;--anatomy-halo-opacity:.14;--anatomy-dot:#1A4B8C;
   --anatomy-red:#c2410c;--anatomy-green:#0f8a4a;--anatomy-blue:#1A4B8C;
   --anatomy-weight:.6px;
 }
+.iso-solid.pb-strong>.iso-shade[data-shade="0"]{fill:#8aa4c2;stroke:#8aa4c2}
+.iso-solid.pb-strong>.iso-shade[data-shade="1"]{fill:#9db5ce;stroke:#9db5ce}
+.iso-solid.pb-strong>.iso-shade[data-shade="2"]{fill:#b1c5da;stroke:#b1c5da}
+.iso-solid.pb-strong>.iso-shade[data-shade="3"]{fill:#c6d6e6;stroke:#c6d6e6}
+.iso-solid.pb-strong>.iso-top{fill:#e2ecf7;stroke:#e2ecf7}
+.iso-solid.pb-strong>.iso-edge{stroke:#1A4B8C}
+.iso-page{width:min(700px,100% - 32px);margin:26px auto 96px}
+.pb-back{display:inline-block;margin:2px 0 16px;font-size:12.5px;line-height:1.4;letter-spacing:.01em;color:#64748b;text-decoration:none;transition:color .15s ease}
+.pb-back:hover,.pb-back:focus-visible{color:#1A4B8C}
 .iso-plate{box-shadow:0 0 0 1px #dbe6f2,0 1px 2px #1a4b8c0a}
 .iso-plate-corners{inset:16px 18px}
 .iso-plate-corner[data-corner="title"]{color:#1A4B8C;letter-spacing:.12em}
 .iso-plate-corner[data-corner="hint"]{color:#94a3b8}
 .iso-legend{color:#64748b}
 @media (max-width:560px){
-  .iso-plate{padding:44px 8px 62px}
-  .iso-plate-corners{inset:14px 12px}
-  .iso-plate-corner{font-size:9px}
+  .iso-plate{padding:42px 6px 78px}
+  .iso-plate-corners{inset:14px 10px}
+  .iso-plate-corner{font-size:9.5px}
+  .iso-plate-corner[data-corner="hint"]{bottom:0}
+  .iso-plate-corner[data-corner="readout"]{bottom:17px}
   .iso-stage .iso-svg{transform:scale(1.07);transform-origin:50% 52%}
 }
 `;
@@ -740,8 +760,8 @@ let page = k.pageHtml({
   body: k.plateHtml({
     fig: "Fig 1",
     title: "Power bench",
-    hint: "Hover to load · 1 s sampling",
-    readout: "33.7 W · 22.3 W · 34 ℃ · 92.9%",
+    hint: "Hover to load",
+    readout: "33.7 W IN · 22.2 W TO BATTERY · 34 °C · 92.9%",
     caption:
       "PowerPulse 的测量链路做成一台实验台上的功率测量仪：电缆从台面下经压盖进来，两根螺钉压住的分流器把电流变成毫伏信号，细导线送到中央的指针表。右侧走纸记录仪把同一路功率画在纸带上（满卷进、收卷出），下方收纳盒存 30 天纸带，台前棘轮每秒跳一格就是采样节拍，超阈值的铜铃负责告警。实测 33.7 W 进、22.2 W 充入电池，健康度 92.9%（4297 / 4629 mAh）。",
     keys: [
@@ -755,10 +775,20 @@ let page = k.pageHtml({
   width: 700,
 });
 
-page = page.replace("</head>", `<style>${PALETTE}</style></head>`);
+page = page.replace("</head>", `<style>${PALETTE}</style>
+<style>
+@media (hover: none){
+  .iso-plate-corner[data-corner="hint"]{font-size:0}
+  .iso-plate-corner[data-corner="hint"]::after{
+    content:"Tap to load";font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+}
+</style></head>`);
+page = page.replace('<html lang="en">', '<html lang="zh-CN">');
+page = page.replace('<main class="iso-page">', '<main class="iso-page"><a class="pb-back" href="../index.html">← PowerPulse</a>');
 
 mkdirSync(join(HERE, "shots"), { recursive: true });
-writeFileSync(join(HERE, "powerbench.html"), page);
+mkdirSync(OUT, { recursive: true });
+writeFileSync(join(OUT, "powerbench.html"), page);
 
 A.auditOrExit(R, P);
 console.log("wrote powerbench.html ·", items.length, "items ·", R.solids.length, "solids ·", R.tubes.length, "tube runs");
