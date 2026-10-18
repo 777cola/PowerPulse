@@ -40,34 +40,29 @@ final class Notifier {
         if set.notifyLow {
             if s.percent <= 20, !low20, !s.isCharging {
                 low20 = true
-                post(lang == .en ? "Battery low" : lang == .tw ? "電量偏低" : "电量偏低",
-                     lang == .en ? "\(s.percent)% left" : "\(s.percent)% 剩余，记得充电", id: "low")
+                post(S.nLowTitle.v(lang), String(format: S.nLowBody.v(lang), s.percent), id: "low")
             }
             if s.percent <= 10, !low10, !s.isCharging {
                 low10 = true
-                post(lang == .en ? "Battery critical" : "电量告急",
-                     lang == .en ? "\(s.percent)% left" : "\(s.percent)% 剩余", id: "crit")
+                post(S.nCritTitle.v(lang), String(format: S.nCritBody.v(lang), s.percent), id: "crit")
             }
         }
         if set.notifyFull, s.percent >= 100, s.isPluggedIn, !fullFired {
             fullFired = true
-            post(lang == .en ? "Fully charged" : lang == .tw ? "已充滿" : "已充满",
-                 lang == .en ? "Unplug to save battery health" : "可以拔掉电源了，有利于电池健康", id: "full")
+            post(S.nFullTitle.v(lang), S.nFullBody.v(lang), id: "full")
         }
         if set.notifyUnplug, let prev = wasPlugged, prev == true, !s.isPluggedIn {
-            post(lang == .en ? "On battery" : lang == .tw ? "已改用電池" : "已切换到电池",
-                 lang == .en ? "Estimated \(fmtClock(s.timeToEmpty))" : "预计可用 \(fmtClock(s.timeToEmpty))", id: "unplug")
+            post(S.nUnplugTitle.v(lang),
+                 String(format: S.nUnplugBody.v(lang), fmtClock(s.timeToEmpty)), id: "unplug")
         }
         if set.notifyHeat, s.isCharging, s.temperature >= set.heatThreshold, !heatFired {
             heatFired = true
-            post(lang == .en ? "Battery is warm" : "电池偏热",
-                 String(format: lang == .en ? "%.1f°C while charging" : "充电中 %.1f℃，建议通风", s.temperature), id: "heat")
+            post(S.nHeatTitle.v(lang), String(format: S.nHeatBody.v(lang), s.temperature), id: "heat")
         }
         if set.notifyAnomaly, s.isCharging, let a = adapter, a.maxW > 0,
            a.negotiatedW < a.maxW * 0.6, s.percent < 80, !anomalyFired, s.slowChargingReason != 0 {
             anomalyFired = true
-            post(lang == .en ? "Charging looks slow" : "充电功率偏低",
-                 String(format: lang == .en ? "Negotiated %.0fW of %.0fW" : "只协商到 %.0fW（上限 %.0fW）", a.negotiatedW, a.maxW), id: "slow")
+            post(S.nSlowTitle.v(lang), String(format: S.nSlowBody.v(lang), a.negotiatedW, a.maxW), id: "slow")
         }
         wasPlugged = s.isPluggedIn
     }

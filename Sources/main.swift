@@ -221,6 +221,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.updateStatusTitle() }
 
         // 调试：启动后自动展开面板，便于截图核对
+        // 压测：反复开关弹窗，看窗口/视图/RSS 会不会越开越多
+        if let cyc = CommandLine.arguments.first(where: { $0.hasPrefix("--cycle=") }),
+           let n = Int(cyc.replacingOccurrences(of: "--cycle=", with: "")) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                for i in 0..<n {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.30) {
+                        self.togglePopover()
+                        if i == n - 1 {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                let line = "done n=\(n) windows=\(NSApp.windows.count) subviews=\(self.popover.container.subviews.count) shown=\(self.popover.popover.isShown)\n"
+                                try? line.write(toFile: "/tmp/pp_cycle.txt", atomically: true, encoding: .utf8)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if CommandLine.arguments.contains("--open-popover") {
             func snap(_ tag: String) {
                 let winCount = NSApp.windows.count
@@ -523,7 +540,11 @@ func dbg(_ s: String) {
 extension PopoverController {
     func renderAll(to dir: String) {
         HistoryStore.shared.open()
-        let (power, adapter) = Sampler.shared.sampleOnce()
+        var (power, adapter) = Sampler.shared.sampleOnce()
+        if CommandLine.arguments.contains("--plugged") {
+            power = .demoPlugged()
+            adapter = .demoAdapter()
+        }
         let stats = Sampler.shared.systemOnce()
         let probe = ProbeEnergy()
         probe.prime()
@@ -598,6 +619,16 @@ extension PopoverController {
 // MARK: - 入口
 
 let app = NSApplication.shared
+if CommandLine.arguments.contains("--export") {
+    // 无界面验证 CSV 导出：写失败/无数据/成功 三种结果都要能区分
+    HistoryStore.shared.open()
+    switch HistoryStore.shared.exportCSV() {
+    case .ok(let u):   print("[export] ok \(u.path)")
+    case .empty:       print("[export] empty")
+    case .failed(let e): print("[export] failed \(e)")
+    }
+    exit(0)
+}
 if let idx = CommandLine.arguments.firstIndex(of: "--selftest"), idx + 1 < CommandLine.arguments.count {
     dbg("boot")
     app.setActivationPolicy(.accessory)

@@ -219,6 +219,7 @@ final class KVRow: NSView {
         if v.textColor != color { v.textColor = color }
     }
     func setKey(_ s: String) { k.setText(s) }
+    func setKeyColor(_ c: NSColor) { if k.textColor != c { k.textColor = c } }
 }
 
 // MARK: - 底部 Tab（纯绘制，避免嵌套约束）

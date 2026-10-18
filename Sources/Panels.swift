@@ -264,11 +264,17 @@ final class HistoryPanel: Panel {
     required init?(coder: NSCoder) { fatalError() }
 
     @objc private func exportTapped() {
-        if let url = HistoryStore.shared.exportCSV() {
+        switch HistoryStore.shared.exportCSV() {
+        case .ok(let url):
             NSWorkspace.shared.activateFileViewerSelecting([url])
+            empty.textColor = D.secondary
             empty.stringValue = "→ \(url.lastPathComponent)"
-        } else {
+        case .empty:
+            empty.textColor = D.secondary
             empty.stringValue = S.noRecord.v(lang)
+        case .failed(let why):
+            empty.textColor = D.red
+            empty.stringValue = "\(S.exportFailed.v(lang))：\(why)"
         }
     }
 
@@ -396,7 +402,10 @@ final class AdapterPanel: Panel {
         emptyHolder.isHidden = true
 
         bigValue.stringValue = "\(fmtW(a.negotiatedW)) W"
-        maxLabel.stringValue = "\(S.negotiated.v(lang)) · \(S.adapterMax.v(lang)) \(fmtW(a.maxW)) W · \(S.utilization.v(lang)) \(Int(a.utilization * 100))%"
+        maxLabel.stringValue = String(format: "%.0fV × %.1fA · %@ %.0f W · %@ %d%%",
+                                      a.volts, a.amps,
+                                      S.adapterMax.v(lang), a.maxW,
+                                      S.utilization.v(lang), Int(a.utilization * 100))
         bar.ratio = CGFloat(a.utilization)
         bar.color = a.utilization > 0.95 ? D.green : (a.utilization > 0.6 ? D.blue : D.orange)
 
@@ -415,7 +424,9 @@ final class AdapterPanel: Panel {
         }
         for (i, p) in a.pdos.enumerated() where i < pdoRows.count {
             let active = abs(p.volts - a.volts) < 0.6
-            pdoRows[i].setKey(String(format: "%.0fV · %.1fA", p.volts, p.amps))
+            let va = String(format: "%.0fV · %.1fA", p.volts, p.amps)
+            pdoRows[i].setKey(active ? "\(S.current.v(lang)) · \(va)" : va)
+            pdoRows[i].setKeyColor(active ? D.green : D.secondary)
             pdoRows[i].setValue(String(format: "%.0f W", p.watts),
                                 color: active ? D.green : D.secondary)
         }

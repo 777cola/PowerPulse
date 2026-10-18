@@ -244,9 +244,15 @@ final class HistoryStore {
         }
     }
 
-    func exportCSV() -> URL? {
+    enum ExportResult {
+        case ok(URL)
+        case empty
+        case failed(String)
+    }
+
+    func exportCSV() -> ExportResult {
         let rows = recent(minutes: 60 * 24 * 365)
-        guard !rows.isEmpty else { return nil }
+        guard !rows.isEmpty else { return .empty }
         let f = DateFormatter()
         f.dateFormat = "yyyy/MM/dd HH:mm:ss"
         var csv = "time,percent,wall_w,system_w,battery_w,charging,temp_c,adapter_w,adapter_max_w\n"
@@ -255,7 +261,12 @@ final class HistoryStore {
         }
         let url = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("PowerPulse-\(Int(Date().timeIntervalSince1970)).csv")
-        try? csv.write(to: url, atomically: true, encoding: .utf8)
-        return url
+        do {
+            try csv.write(to: url, atomically: true, encoding: .utf8)
+            return .ok(url)
+        } catch {
+            // 没权限（下载目录 TCC）或磁盘满，别再返回一个不存在的路径
+            return .failed(error.localizedDescription)
+        }
     }
 }

@@ -11,8 +11,8 @@ final class FlowView: NSView {
 
     private let nodeW: CGFloat = 46
     private let gap: CGFloat = 9          // 节点与带之间的缝隙
-    private let minBand: CGFloat = 26     // 带子最低高度，保证胶囊放得下
-    private let maxBand: CGFloat = 46
+    private let minBand: CGFloat = 22     // 带子最低高度，保证胶囊放得下
+    private let maxBand: CGFloat = 56
     private let bandGap: CGFloat = 12     // 两条带之间的间距
 
     override var isFlipped: Bool { true }
@@ -22,7 +22,7 @@ final class FlowView: NSView {
 
     func startAnimating() {
         guard timer == nil else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 12.0, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 10.0, repeats: true) { [weak self] _ in
             guard let self, self.window != nil else { return }
             let w = max(self.snapshot.isPluggedIn ? self.snapshot.wallW : self.snapshot.batteryW, 1)
             let speed = min(max(0.35 + w / 120.0, 0.35), 1.6)
@@ -51,7 +51,9 @@ final class FlowView: NSView {
     }
 
     private func bandHeight(_ watts: Double) -> CGFloat {
-        let t = CGFloat(min(max(watts / 60.0, 0), 1))
+        // 用 0.7 次方做压缩：12W 和 32W 在视觉上要能看出粗细差别，
+        // 线性映射会被最小高度吃掉差量（两档只差 6pt）。
+        let t = CGFloat(pow(min(max(watts / 60.0, 0), 1), 0.7))
         return minBand + (maxBand - minBand) * t
     }
 

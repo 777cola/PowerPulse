@@ -407,3 +407,41 @@ extension AdapterInfo {
         return a
     }
 }
+
+
+// MARK: - 自检用假数据（--plugged）
+
+extension PowerSnapshot {
+    /// 构造一份"插着 60W 充电器、正在充电"的快照，用来在没插电的机器上检查双带布局
+    static func demoPlugged() -> PowerSnapshot {
+        var d = PowerSnapshot()
+        d.isPluggedIn = true
+        d.isCharging = true
+        d.percent = 86
+        d.wallW = 44.2
+        d.systemLoadW = 12.4
+        d.batteryW = 31.8
+        d.currentCapacity = 3700
+        d.fullCapacity = 4297
+        d.designCapacity = 4629
+        d.cycleCount = 176
+        d.temperature = 34.7
+        d.timeToFull = 41
+        d.timeToEmpty = 186
+        return d
+    }
+}
+
+extension AdapterInfo {
+    static func demoAdapter() -> AdapterInfo {
+        var a = AdapterInfo()
+        a.negotiatedW = 44
+        a.volts = 20
+        a.amps = 2.2
+        a.maxW = 60
+        a.tier = 2
+        a.name = "60W USB-C Power Adapter"
+        a.pdos = [5.0, 9.0, 12.0, 15.0, 20.0].map { AdapterPDO(volts: $0, amps: 3.0) }
+        return a
+    }
+}
