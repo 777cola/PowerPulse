@@ -1,19 +1,5 @@
-# Build artifacts
 .build/
+build/
 PowerPulse.app/
-*.app/
-
-# Xcode
-*.xcodeproj/
-*.xcworkspace/
-xcuserdata/
-DerivedData/
-
-# Release artifacts
 *.dmg
-release_body.json
-
-# macOS
 .DS_Store
-*.swp
-*~
