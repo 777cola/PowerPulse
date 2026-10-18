@@ -345,6 +345,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var lastTitleKey = ""
 
+    /// 菜单栏标题的组装单独拆出来：状态栏和自检渲染共用同一份代码，
+    /// 否则"渲染出来对、真机不对"这种问题永远测不出来。
+    static func statusTitle(percent: Int, watts: Double, charging: Bool, plugged: Bool,
+                            mode: Settings.MenuBarMode, image: NSImage) -> NSAttributedString {
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
+        let text = NSMutableAttributedString()
+        func append(_ s: String) {
+            text.append(NSAttributedString(string: s, attributes: [
+                .font: font,
+                .foregroundColor: NSColor.labelColor,
+            ]))
+        }
+        // NSTextAttachment 默认把图片底边压在基线上；图标比文字高，就会整体偏上。
+        // 按 capHeight 把图标往下挪，让图标和文字的视觉中心对齐。
+        func iconAttachment() -> NSAttributedString {
+            let att = NSTextAttachment()
+            att.image = image
+            let iw = image.size.width, ih = image.size.height
+            let dy = (font.capHeight - ih) / 2
+            att.bounds = CGRect(x: 0, y: dy, width: iw, height: ih)
+            return NSAttributedString(attachment: att)
+        }
+        switch mode {
+        case .pctAndW:
+            append("\(percent)% ")
+            text.append(iconAttachment())
+            append(" \(fmtW(watts))W")
+        case .pctOnly:
+            append("\(percent)% ")
+            text.append(iconAttachment())
+        case .wOnly:
+            append("\(fmtW(watts))W ")
+            text.append(iconAttachment())
+        case .iconOnly:
+            text.append(iconAttachment())
+        }
+        return text
+    }
+
     private func updateStatusTitle() {
         guard let button = statusItem.button else { return }
         let percent = snapshot.percent
@@ -354,40 +393,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastTitleKey = key
         let color: NSColor = snapshot.isCharging ? .systemGreen
             : (snapshot.isPluggedIn ? .systemPurple : (percent <= 15 ? .systemRed : .labelColor))
-
         let image = Self.cachedBatteryImage(percent: percent, color: color, bolt: snapshot.isCharging)
-        let mode = Settings.shared.menuBar
-
-        let text = NSMutableAttributedString()
-        func append(_ s: String) {
-            text.append(NSAttributedString(string: s, attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold),
-                .foregroundColor: NSColor.labelColor,
-            ]))
-        }
-        switch mode {
-        case .pctAndW:
-            append("\(percent)% ")
-            let att = NSTextAttachment()
-            att.image = image
-            text.append(NSAttributedString(attachment: att))
-            append(" \(fmtW(watts))W")
-        case .pctOnly:
-            append("\(percent)% ")
-            let att = NSTextAttachment()
-            att.image = image
-            text.append(NSAttributedString(attachment: att))
-        case .wOnly:
-            append("\(fmtW(watts))W ")
-            let att = NSTextAttachment()
-            att.image = image
-            text.append(NSAttributedString(attachment: att))
-        case .iconOnly:
-            let att = NSTextAttachment()
-            att.image = image
-            text.append(NSAttributedString(attachment: att))
-        }
-        button.attributedTitle = text
+        button.attributedTitle = Self.statusTitle(percent: percent, watts: watts,
+                                                  charging: snapshot.isCharging,
+                                                  plugged: snapshot.isPluggedIn,
+                                                  mode: Settings.shared.menuBar, image: image)
     }
 
     private func onTick() {
@@ -616,9 +626,55 @@ extension PopoverController {
     }
 }
 
+// MARK: - 菜单栏标题离屏渲染（像素级核对图标与文字的对齐）
+
+enum StatusBarRender {
+    static func run(dir: String) {
+        let cases: [(String, Int, Double, Bool, Bool)] = [
+            ("99-5w", 99, 5, true, true),
+            ("45-12w", 45, 12, true, true),
+            ("100-0w", 100, 0, false, false),
+        ]
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        for (name, pct, w, ch, plug) in cases {
+            let color: NSColor = ch ? .systemGreen : (plug ? .systemPurple : .labelColor)
+            let img = AppDelegate.cachedBatteryImage(percent: pct, color: color, bolt: ch)
+            let title = AppDelegate.statusTitle(percent: pct, watts: w, charging: ch,
+                                                plugged: plug, mode: .pctAndW, image: img)
+            let sz = title.size()
+            let W = Int(ceil(sz.width)) + 12
+            let H = 22
+            guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: W * 2, pixelsHigh: H * 2,
+                                             bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                             isPlanar: false, colorSpaceName: .deviceRGB,
+                                             bytesPerRow: 0, bitsPerPixel: 0) else { continue }
+            rep.size = NSSize(width: W, height: H)
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+            NSColor.black.setFill()
+            NSRect(x: 0, y: 0, width: W, height: H).fill()
+            title.draw(at: NSPoint(x: 6, y: (CGFloat(H) - sz.height) / 2 + 1))
+            NSGraphicsContext.restoreGraphicsState()
+            if let data = rep.representation(using: .png, properties: [:]) {
+                try? data.write(to: URL(fileURLWithPath: dir + "/status-\(name).png"))
+            }
+            print("[status] \(name) textSize=\(sz) imageSize=\(img.size)")
+        }
+    }
+}
+
 // MARK: - 入口
 
 let app = NSApplication.shared
+if let si = CommandLine.arguments.firstIndex(of: "--statusbar"), si + 1 < CommandLine.arguments.count {
+    if CommandLine.arguments.contains("--dark") {
+        app.appearance = NSAppearance(named: .darkAqua)
+    } else {
+        app.appearance = NSAppearance(named: .aqua)
+    }
+    StatusBarRender.run(dir: CommandLine.arguments[si + 1])
+    exit(0)
+}
 if CommandLine.arguments.contains("--export") {
     // 无界面验证 CSV 导出：写失败/无数据/成功 三种结果都要能区分
     HistoryStore.shared.open()
