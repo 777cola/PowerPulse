@@ -140,10 +140,13 @@ final class FlowView: NSView {
         let rect = NSRect(x: startX, y: centerY - height / 2, width: max(endX - startX, 1), height: height)
         let path = NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2)
 
-        NSGradient(colors: [color.withAlphaComponent(0.20),
-                            color.withAlphaComponent(0.46),
-                            color.withAlphaComponent(0.20)])?.draw(in: path, angle: 0)
-        color.withAlphaComponent(0.30).setStroke()
+        let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let a1: CGFloat = isDark ? 0.20 : 0.16
+        let a2: CGFloat = isDark ? 0.46 : 0.38
+        NSGradient(colors: [color.withAlphaComponent(a1),
+                            color.withAlphaComponent(a2),
+                            color.withAlphaComponent(a1)])?.draw(in: path, angle: 0)
+        color.withAlphaComponent(isDark ? 0.30 : 0.42).setStroke()
         path.lineWidth = 0.5
         path.stroke()
 
@@ -185,10 +188,10 @@ final class FlowView: NSView {
     private func drawNode(x: CGFloat, centerY: CGFloat, height: CGFloat,
                           symbol: String, value: String, color: NSColor) {
         let rect = NSRect(x: x, y: centerY - height / 2, width: nodeW, height: height)
-        NSColor.labelColor.withAlphaComponent(0.07).setFill()
+        D.cardFill.setFill()
         let path = NSBezierPath(roundedRect: rect, xRadius: 9, yRadius: 9)
         path.fill()
-        NSColor.labelColor.withAlphaComponent(0.05).setStroke()
+        D.cardLine.setStroke()
         path.lineWidth = 0.5
         path.stroke()
 

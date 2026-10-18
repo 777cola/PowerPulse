@@ -154,11 +154,17 @@ enum D {
     static let width: CGFloat = 320
     static let pad: CGFloat = 16
     static let radius: CGFloat = 10
-    static let blue = NSColor.systemBlue
-    static let green = NSColor.systemGreen
-    static let orange = NSColor.systemOrange
-    static let red = NSColor.systemRed
-    static let purple = NSColor.systemPurple
+    /// 系统色在浅色背景上偏亮，浅色模式单独用一档更深的
+    static func dyn(_ light: NSColor, _ dark: NSColor) -> NSColor {
+        NSColor(name: nil) { ap in
+            ap.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+        }
+    }
+    static let blue = dyn(NSColor(srgbRed: 0.05, green: 0.35, blue: 0.74, alpha: 1), .systemBlue)
+    static let green = dyn(NSColor(srgbRed: 0.05, green: 0.50, blue: 0.24, alpha: 1), .systemGreen)
+    static let orange = dyn(NSColor(srgbRed: 0.76, green: 0.38, blue: 0.00, alpha: 1), .systemOrange)
+    static let red = dyn(NSColor(srgbRed: 0.76, green: 0.17, blue: 0.17, alpha: 1), .systemRed)
+    static let purple = dyn(NSColor(srgbRed: 0.42, green: 0.25, blue: 0.75, alpha: 1), .systemPurple)
     static let label = NSColor.labelColor
     static let secondary = NSColor.secondaryLabelColor
     static let tertiary = NSColor.tertiaryLabelColor
@@ -175,9 +181,10 @@ enum D {
     static func text(_ size: CGFloat, _ weight: NSFont.Weight = .regular) -> NSFont {
         NSFont.systemFont(ofSize: size, weight: weight)
     }
-    static var cardFill: NSColor { NSColor.labelColor.withAlphaComponent(0.055) }
-    static var cardLine: NSColor { NSColor.labelColor.withAlphaComponent(0.06) }
-    static var trackFill: NSColor { NSColor.labelColor.withAlphaComponent(0.09) }
+    // 浅色模式下 5.5% 的黑几乎看不见，卡片会和背景糊在一起，单独调深
+    static var cardFill: NSColor { dyn(NSColor(white: 0, alpha: 0.045), NSColor(white: 1, alpha: 0.075)) }
+    static var cardLine: NSColor { dyn(NSColor(white: 0, alpha: 0.09), NSColor(white: 1, alpha: 0.07)) }
+    static var trackFill: NSColor { dyn(NSColor(white: 0, alpha: 0.10), NSColor(white: 1, alpha: 0.12)) }
 }
 
 // MARK: - 设置
