@@ -12,7 +12,7 @@ final class FlowView: NSView {
 
     func startAnimating() {
         guard timer == nil else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 10.0, repeats: true) { [weak self] _ in
             guard let self else { return }
             // 功率越大流得越快：1.5s(慢) ~ 0.7s(快) 一圈
             let w = max(self.snapshot.isPluggedIn ? self.snapshot.wallW : self.snapshot.batteryW, 1)
@@ -80,7 +80,7 @@ final class FlowView: NSView {
         } else {
             // 插着电但不充电：一条淡淡的待机带
             drawBand(startX: startX, endX: endX, centerY: batY, height: 4,
-                     color: D.tertiary, cooling: true, dots: false)
+                     color: D.tertiary, cooling: true, dots: false, sweep: false)
             drawEndIcon(x: w - 17, y: batY, symbol: "battery.100", text: S.idle.v(Settings.shared.lang), color: D.tertiary)
         }
 
@@ -147,24 +147,13 @@ final class FlowView: NSView {
     }
 
     private func drawBand(startX: CGFloat, endX: CGFloat, centerY: CGFloat, height: CGFloat,
-                          color: NSColor, cooling: Bool, dots: Bool = true) {
+                          color: NSColor, cooling: Bool, dots: Bool = true, sweep: Bool = true) {
         let path = bandPath(startX: startX, endX: endX, centerY: centerY, height: height)
 
-        // 外发光
-        NSGraphicsContext.saveGraphicsState()
-        let shadow = NSShadow()
-        shadow.shadowColor = color.withAlphaComponent(0.35)
-        shadow.shadowBlurRadius = 6
-        shadow.shadowOffset = .zero
-        shadow.set()
-        color.withAlphaComponent(0.25).setFill()
-        path.fill()
-        NSGraphicsContext.restoreGraphicsState()
-
-        // 主体渐变
-        let grad = NSGradient(colors: [color.withAlphaComponent(0.10),
-                                       color.withAlphaComponent(0.30),
-                                       color.withAlphaComponent(0.10)])
+        // 主体渐变（不做每帧高斯模糊——那是 CPU 的大头）
+        let grad = NSGradient(colors: [color.withAlphaComponent(0.12),
+                                       color.withAlphaComponent(0.34),
+                                       color.withAlphaComponent(0.12)])
         grad?.draw(in: path, angle: 0)
         color.withAlphaComponent(0.28).setStroke()
         path.lineWidth = 0.5
@@ -172,7 +161,7 @@ final class FlowView: NSView {
 
         guard dots, height > 8 else { return }
         // 流动的粒子
-        let n = 8
+        let n = 6
         for i in 0..<n {
             let t = (CGFloat(i) / CGFloat(n) + phase).truncatingRemainder(dividingBy: 1)
             let x = startX + (endX - startX) * t
@@ -185,6 +174,7 @@ final class FlowView: NSView {
         }
 
         // 高光扫过
+        guard sweep else { return }
         NSGraphicsContext.saveGraphicsState()
         path.addClip()
         let bandW = endX - startX

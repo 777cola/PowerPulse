@@ -88,9 +88,10 @@ enum S {
     static let energyTitle = Tri("耗电排行", "耗電排行", "Energy use")
     static let cpuLoad = Tri("负载", "負載", "Load")
     static let powerCurve = Tri("系统功耗曲线", "系統功耗曲線", "System power")
+    static let chargeCurve = Tri("充电功率曲线", "充電功率曲線", "Charging power")
     static let energyHint = Tri("仅统计当前用户可见的进程", "僅統計當前使用者可見的程序", "Current-user processes only")
 
-    static let thisSession = Tri("本次充电", "本次充電", "This session")
+    static let thisSession = Tri("最近一次充电", "最近一次充電", "Last session")
     static let totalIn = Tri("累计充入", "累計充入", "Energy in")
     static let avgPower = Tri("平均功率", "平均功率", "Avg power")
     static let peakPower = Tri("峰值功率", "峰值功率", "Peak")
@@ -99,7 +100,7 @@ enum S {
     static let noRecord = Tri("暂无记录", "暫無記錄", "No data yet")
     static let exportCSV = Tri("导出 CSV", "匯出 CSV", "Export CSV")
     static let exported = Tri("已导出", "已匯出", "Exported")
-    static let dailyWh = Tri("每天充入", "每天充入", "Daily Wh")
+    static let dailyWh = Tri("每天充入 (Wh)", "每天充入 (Wh)", "Daily Wh")
 
     static let autostart = Tri("开机自启", "開機自啟", "Launch at login")
     static let language = Tri("语言", "語言", "Language")

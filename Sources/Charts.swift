@@ -107,8 +107,8 @@ final class BarChartView: NSView {
             let t = S.noRecord.v(Settings.shared.lang)
             let f = D.text(10)
             let sz = t.size(f)
-            t.draw(at: NSPoint(x: b.midX - sz.width / 2, y: b.midY - sz.height / 2),
-                   withAttributes: [.font: f, .foregroundColor: D.tertiary])
+            t.draw(at: NSPoint(x: b.midX - sz.width / 2, y: b.midY - sz.height / 2 + 2),
+                   withAttributes: [.font: f, .foregroundColor: D.secondary])
             // 仍然画出日期标签，让"空"也有结构
             let n0 = max(values.count, 1)
             let slot0 = b.width / CGFloat(n0)
@@ -116,7 +116,7 @@ final class BarChartView: NSView {
                 let f2 = D.text(8)
                 let s2 = l.size(f2)
                 l.draw(at: NSPoint(x: b.minX + slot0 * CGFloat(i) + (slot0 - s2.width) / 2, y: b.minY + 1),
-                       withAttributes: [.font: f2, .foregroundColor: D.tertiary])
+                       withAttributes: [.font: f2, .foregroundColor: D.secondary])
             }
             return
         }

@@ -59,6 +59,7 @@ final class HistoryStore {
         CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
         """)
         exec("PRAGMA journal_mode=WAL;")
+        exec("PRAGMA wal_autocheckpoint=200;")
     }
 
     private func exec(_ sql: String) {
@@ -123,37 +124,43 @@ final class HistoryStore {
         return out
     }
 
-    /// 本次充电：从当前会话起点（最近一次由"未充电"变为"充电"）开始统计
+    /// 最近一次充电（可能已经结束）。以前只统计"正在充电"的会话，
+    /// 一旦拔掉电源四张卡就全变 "—"，看着像坏了。
     func currentSession() -> SessionStats {
         var st = SessionStats()
         guard db != nil else { return st }
         queue.sync {
             var rows: [(Date, Double)] = []
             var stmt: OpaquePointer?
-            let sql = "SELECT ts,battery,charging FROM samples ORDER BY ts DESC LIMIT 7200;"
+            let sql = "SELECT ts,battery,charging FROM samples ORDER BY ts DESC LIMIT 43200;"
             guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
             defer { sqlite3_finalize(stmt) }
+
             var started = false
+            var firstRowWasCharging = false
             while sqlite3_step(stmt) == SQLITE_ROW {
                 let ts = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 0))
                 let w = sqlite3_column_double(stmt, 1)
                 let ch = sqlite3_column_int(stmt, 2) == 1
                 if !started {
-                    if !ch { return }          // 现在没在充电
+                    if !ch { continue }        // 跳过最近的非充电样本，往前找上一段充电
                     started = true
+                    firstRowWasCharging = true
                     st.isActive = true
+                } else if !ch {
+                    break                      // 这段充电结束
                 }
-                if !ch { return }
                 rows.append((ts, w))
             }
-            guard let first = rows.first, let last = rows.last else { return }
-            st.seconds = first.0.timeIntervalSince(last.0)
+            _ = firstRowWasCharging
+            guard let newest = rows.first, let oldest = rows.last else { return }
+            st.seconds = newest.0.timeIntervalSince(oldest.0)
             for i in 0..<rows.count {
                 let dt = i + 1 < rows.count ? rows[i].0.timeIntervalSince(rows[i + 1].0) : 0
                 st.wh += rows[i].1 * max(dt, 0) / 3600
                 st.peakW = max(st.peakW, rows[i].1)
             }
-            st.avgW = st.seconds > 0 ? rows.map(\.1).reduce(0, +) / Double(rows.count) : 0
+            st.avgW = rows.map(\.1).reduce(0, +) / Double(rows.count)
         }
         return st
     }
@@ -205,6 +212,15 @@ final class HistoryStore {
     }
 
     // MARK: 维护
+
+    /// 把 WAL 合并回主库，避免 -wal 文件无限长
+    func checkpoint() {
+        guard db != nil else { return }
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.exec("PRAGMA wal_checkpoint(TRUNCATE);")
+        }
+    }
 
     func prune(days: Int) {
         guard days > 0 else { return }

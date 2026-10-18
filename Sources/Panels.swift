@@ -4,6 +4,8 @@ import AppKit
 
 class Panel: NSView {
     var preferredHeight: CGFloat { 300 }
+    /// 只有实时数据的面板才需要每秒刷新
+    var needsLiveRefresh: Bool { true }
     override var isFlipped: Bool { true }
     var lang: Lang { Settings.shared.lang }
 
@@ -77,9 +79,18 @@ final class NowPanel: Panel {
     }
     required init?(coder: NSCoder) { fatalError() }
 
+    override var isHidden: Bool {
+        didSet { syncAnimation() }
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if window != nil { flow.startAnimating() } else { flow.stopAnimating() }
+        syncAnimation()
+    }
+
+    /// 不在前台就停掉动画 —— 隐藏的面板也有 window，光靠 viewDidMoveToWindow 停不下来
+    private func syncAnimation() {
+        if isHidden || window == nil { flow.stopAnimating() } else { flow.startAnimating() }
     }
 
     override func refresh(power s: PowerSnapshot, adapter a: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
@@ -232,7 +243,7 @@ final class HistoryPanel: Panel {
         let root = vstack([
             SectionTitle(S.thisSession.v(lang), symbol: "bolt.circle"),
             cards,
-            SectionTitle(S.powerFlow.v(lang), symbol: "chart.xyaxis.line"),
+            SectionTitle(S.chargeCurve.v(lang), symbol: "chart.xyaxis.line"),
             chart,
             weekTitle,
             weekChart,
@@ -262,10 +273,12 @@ final class HistoryPanel: Panel {
 
     override func refresh(power: PowerSnapshot, adapter: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
         let session = HistoryStore.shared.currentSession()
-        inCard.update(value: String(format: "%.1f Wh", session.wh))
-        avgCard.update(value: String(format: "%.0f W", session.avgW))
-        peakCard.update(value: String(format: "%.0f W", session.peakW))
-        durCard.update(value: session.seconds > 0 ? fmtDuration(session.seconds) : "—")
+        let hasSession = session.seconds > 0
+        // 没有记录时统一显示 "—"，不要一半 0 一半 —
+        inCard.update(value: hasSession ? String(format: "%.1f Wh", session.wh) : "—")
+        avgCard.update(value: hasSession ? String(format: "%.0f W", session.avgW) : "—")
+        peakCard.update(value: hasSession ? String(format: "%.0f W", session.peakW) : "—")
+        durCard.update(value: hasSession ? fmtDuration(session.seconds) : "—")
 
         let rows = HistoryStore.shared.recent(minutes: 60).filter { $0.charging }
         let df = DateFormatter()
@@ -278,7 +291,11 @@ final class HistoryPanel: Panel {
         dayF.dateFormat = "M/d"
         weekChart.set(days.map(\.wh), labels: days.map { dayF.string(from: $0.date) })
         weekTitle.set("\(S.last7.v(lang)) · \(S.dailyWh.v(lang))")
-        exportButton.title = S.exportCSV.v(lang)
+        if exportButton.title != S.exportCSV.v(lang) { exportButton.title = S.exportCSV.v(lang) }
+        // 没数据就不让人点，免得点了没反应
+        let anyData = days.contains { $0.wh > 0 } || hasSession
+        exportButton.isEnabled = anyData
+        exportButton.alphaValue = anyData ? 1 : 0.45
     }
 
     private func downsample(_ a: [Double]) -> [Double] {
@@ -307,6 +324,7 @@ final class AdapterPanel: Panel {
     private var pdoRows: [KVRow] = []
     private let emptyLabel = label("", font: D.text(11), color: D.tertiary, align: .center)
     private let contentBox = NSView()
+    private let emptyHolder = NSView()
 
     override var preferredHeight: CGFloat { 360 }
 
@@ -341,10 +359,24 @@ final class AdapterPanel: Panel {
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
         emptyLabel.maximumNumberOfLines = 3
         emptyLabel.alignment = .center
+        emptyLabel.font = D.text(11)
+        emptyLabel.textColor = D.tertiary
 
-        let root = vstack([contentBox, emptyLabel], spacing: 8)
+        let emptyIcon = IconView("powerplug", size: 34, color: D.tertiary)
+        let emptyTitle = label(S.noAdapter.v(lang), font: D.text(12, .medium), color: D.secondary, align: .center)
+        let emptyStack = vstack([emptyIcon, emptyTitle, emptyLabel], spacing: 7, alignment: .centerX)
+        emptyStack.translatesAutoresizingMaskIntoConstraints = false
+        emptyHolder.addSubview(emptyStack)
+        emptyStack.centerXAnchor.constraint(equalTo: emptyHolder.centerXAnchor).isActive = true
+        emptyStack.centerYAnchor.constraint(equalTo: emptyHolder.centerYAnchor).isActive = true
+        emptyStack.widthAnchor.constraint(lessThanOrEqualTo: emptyHolder.widthAnchor, constant: -40).isActive = true
+
+        emptyHolder.translatesAutoresizingMaskIntoConstraints = false
+        let root = vstack([contentBox, emptyHolder], spacing: 8)
         addSubview(root)
         root.pin(to: self, insets: .init(top: 8, left: D.pad, bottom: 8, right: D.pad))
+        emptyHolder.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
+        emptyHolder.heightAnchor.constraint(greaterThanOrEqualToConstant: 160).isActive = true
         bar.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
         verdict.translatesAutoresizingMaskIntoConstraints = false
         verdict.maximumNumberOfLines = 2
@@ -355,12 +387,12 @@ final class AdapterPanel: Panel {
     override func refresh(power s: PowerSnapshot, adapter a: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
         guard let a, s.isPluggedIn else {
             contentBox.isHidden = true
-            emptyLabel.isHidden = false
-            emptyLabel.stringValue = "\(S.noAdapter.v(lang))\n\(S.plugHint.v(lang))"
+            emptyHolder.isHidden = false
+            emptyLabel.stringValue = S.plugHint.v(lang)
             return
         }
         contentBox.isHidden = false
-        emptyLabel.isHidden = true
+        emptyHolder.isHidden = true
 
         bigValue.stringValue = "\(fmtW(a.negotiatedW)) W"
         maxLabel.stringValue = "\(S.negotiated.v(lang)) · \(S.adapterMax.v(lang)) \(fmtW(a.maxW)) W · \(S.utilization.v(lang)) \(Int(a.utilization * 100))%"
@@ -396,6 +428,7 @@ final class AdapterPanel: Panel {
 // MARK: - 设置
 
 final class SettingsPanel: Panel {
+    override var needsLiveRefresh: Bool { false }
     private var autostartRow: SwitchRow!
     private var langRow: PopupRow!
     private var menuRow: PopupRow!

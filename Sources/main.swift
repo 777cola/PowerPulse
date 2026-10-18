@@ -64,6 +64,7 @@ final class PopoverController: NSObject {
         langButton.action = #selector(cycleLang)
         langButton.font = D.text(10, .medium)
         langButton.contentTintColor = D.secondary
+        langButton.toolTip = "切换语言 / Switch language"
         langButton.wantsLayer = true
         langButton.layer?.cornerRadius = 5
         langButton.layer?.backgroundColor = NSColor.labelColor.withAlphaComponent(0.06).cgColor
@@ -152,6 +153,7 @@ final class PopoverController: NSObject {
 
     func refresh(power: PowerSnapshot, adapter: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
         guard panels.indices.contains(current) else { return }
+        guard panels[current].needsLiveRefresh else { return }
         panels[current].refresh(power: power, adapter: adapter, stats: stats, energy: energy)
     }
 }
@@ -182,6 +184,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !skip.contains("history") {
             HistoryStore.shared.open()
             HistoryStore.shared.prune(days: Settings.shared.retentionDays)
+            HistoryStore.shared.checkpoint()
         }
         if !skip.contains("notifier") { Notifier.shared.setUp() }
         setupStatusItem()
@@ -235,6 +238,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { snap("before") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 self.togglePopover()
+                if let t = CommandLine.arguments.first(where: { $0.hasPrefix("--tab=") }),
+                   let n = Int(t.replacingOccurrences(of: "--tab=", with: "")) {
+                    self.popover.select(n)
+                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { snap("after-toggle") }
                 // 连切三次语言，确认不会叠层
                 for (i, lang) in [Lang.tw, .en, .zh].enumerated() {
@@ -319,14 +326,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quit() { NSApp.terminate(nil) }
 
+    private var lastTitleKey = ""
+
     private func updateStatusTitle() {
         guard let button = statusItem.button else { return }
         let percent = snapshot.percent
         let watts = snapshot.isPluggedIn ? snapshot.wallW : snapshot.systemUsageW
+        let key = "\(percent)|\(Int(watts.rounded()))|\(snapshot.isCharging)|\(Settings.shared.menuBar.rawValue)"
+        guard key != lastTitleKey else { return }
+        lastTitleKey = key
         let color: NSColor = snapshot.isCharging ? .systemGreen
             : (snapshot.isPluggedIn ? .systemPurple : (percent <= 15 ? .systemRed : .labelColor))
 
-        let image = Self.batteryImage(percent: percent, color: color, bolt: snapshot.isCharging)
+        let image = Self.cachedBatteryImage(percent: percent, color: color, bolt: snapshot.isCharging)
         let mode = Settings.shared.menuBar
 
         let text = NSMutableAttributedString()
@@ -383,6 +395,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: 电池图标
+
+    private static var imageCache: [String: NSImage] = [:]
+
+    static func cachedBatteryImage(percent: Int, color: NSColor, bolt: Bool) -> NSImage {
+        let key = "\(percent)|\(color.description)|\(bolt)"
+        if let hit = imageCache[key] { return hit }
+        if imageCache.count > 60 { imageCache.removeAll() }
+        let img = batteryImage(percent: percent, color: color, bolt: bolt)
+        imageCache[key] = img
+        return img
+    }
 
     static func batteryImage(percent: Int, color: NSColor, bolt: Bool) -> NSImage {
         let w: CGFloat = 26, h: CGFloat = 13
@@ -497,6 +520,7 @@ func dbg(_ s: String) {
 
 extension PopoverController {
     func renderAll(to dir: String) {
+        HistoryStore.shared.open()
         let (power, adapter) = Sampler.shared.sampleOnce()
         let stats = Sampler.shared.systemOnce()
         let probe = ProbeEnergy()

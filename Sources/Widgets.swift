@@ -1,5 +1,18 @@
 import AppKit
 
+// MARK: - 文本差异赋值
+
+extension NSTextField {
+    /// NSTextField.stringValue 即使赋相同值也会触发重新布局/重绘，
+    /// 弹窗是玻璃材质，每触发一次就要重新合成一层模糊——省掉这些空转。
+    func setText(_ s: String) {
+        if stringValue != s { stringValue = s }
+    }
+    func setAttributed(_ a: NSAttributedString) {
+        if attributedStringValue != a { attributedStringValue = a }
+    }
+}
+
 // MARK: - 布局小工具
 
 func vstack(_ views: [NSView], spacing: CGFloat = 8,
@@ -123,8 +136,8 @@ final class MetricCard: NSView {
     required init?(coder: NSCoder) { fatalError() }
 
     func update(title: String? = nil, value: String, valueColor: NSColor = D.label) {
-        if let t = title { titleLabel.stringValue = t }
-        valueLabel.stringValue = value
+        if let t = title { titleLabel.setText(t) }
+        valueLabel.setText(value)
         valueLabel.textColor = valueColor
         valueLabel.font = D.rounded(13.5)
     }
@@ -195,8 +208,11 @@ final class KVRow: NSView {
         heightAnchor.constraint(equalToConstant: 19).isActive = true
     }
     required init?(coder: NSCoder) { fatalError() }
-    func setValue(_ s: String, color: NSColor = D.label) { v.stringValue = s; v.textColor = color }
-    func setKey(_ s: String) { k.stringValue = s }
+    func setValue(_ s: String, color: NSColor = D.label) {
+        v.setText(s)
+        if v.textColor != color { v.textColor = color }
+    }
+    func setKey(_ s: String) { k.setText(s) }
 }
 
 // MARK: - 底部 Tab（纯绘制，避免嵌套约束）
