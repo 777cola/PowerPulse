@@ -631,7 +631,7 @@ extension PopoverController {
 enum StatusBarRender {
     static func run(dir: String) {
         let cases: [(String, Int, Double, Bool, Bool)] = [
-            ("99-5w", 99, 5, true, true),
+            ("86-44w", 86, 44, true, true),
             ("45-12w", 45, 12, true, true),
             ("100-0w", 100, 0, false, false),
         ]

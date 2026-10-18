@@ -1,17 +1,24 @@
 <div align="center">
 
-# PowerPulse
+<h1>PowerPulse</h1>
 
-**菜单栏里，看清每一瓦。**
+<p><b>菜单栏里，看清每一瓦。</b></p>
 
-macOS 菜单栏电源监控 · 每秒采样 · 识别充电器 PD 档位 · 记录 30 天历史
+<p>macOS 菜单栏电源监控 · 每秒采样 · 识别充电器 PD 档位 · 记录 30 天历史</p>
 
-[![Latest release](https://img.shields.io/github/v/release/777cola/PowerPulse?include_prereleases&label=release)](https://github.com/777cola/PowerPulse/releases)
-[![macOS](https://img.shields.io/badge/macOS-14.0%2B-1A4B8C)](https://github.com/777cola/PowerPulse)
-[![License](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
-[![Pure AppKit](https://img.shields.io/badge/UI-pure%20AppKit-E86C00)](https://github.com/777cola/PowerPulse)
+<p>
+  <a href="https://github.com/777cola/PowerPulse/releases"><img src="https://img.shields.io/github/v/release/777cola/PowerPulse?label=release" alt="release"></a>
+  <img src="https://img.shields.io/badge/macOS-14.0%2B-1A4B8C" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/license-MIT-yellow" alt="MIT">
+  <img src="https://img.shields.io/badge/UI-pure%20AppKit-E86C00" alt="pure AppKit">
+</p>
 
-[官网](https://powerpulse.qijunhao.xyz) · [下载](https://github.com/777cola/PowerPulse/releases) · [解剖图](https://powerpulse.qijunhao.xyz/assets/powerbench.html) · [反馈](https://github.com/777cola/PowerPulse/issues)
+<p>
+  <a href="https://powerpulse.qijunhao.xyz">官网</a> ·
+  <a href="https://github.com/777cola/PowerPulse/releases">下载</a> ·
+  <a href="https://powerpulse.qijunhao.xyz/assets/powerbench.html">解剖图</a> ·
+  <a href="https://github.com/777cola/PowerPulse/issues">反馈</a>
+</p>
 
 <img src="docs/img/panel-flow.png" width="640" alt="功率流面板">
 
@@ -142,7 +149,7 @@ SourcesWidget/
 
 - **iPhone 电池**：需要 `libimobiledevice`，当前版本没做
 - **线材 e-marker**：macOS 不暴露，只能推断
-- **Intel Mac**：未测试，功耗字段可能与 Apple Silicon 不同
+- **Intel Mac**：当前二进制是 arm64，Intel 机器跑不了（需要改 `build_app.sh` 里的 `-target` 自行编译）
 - **桌面小组件**：需要 ad-hoc 签名 + App Sandbox entitlement 才会被系统收录
 
 ## 变更
@@ -238,7 +245,7 @@ The self-test renders every panel in every language offscreen and audits the lay
 
 - iPhone battery readout needs `libimobiledevice` — not in this version
 - Cable e-marker is invisible to macOS
-- Intel Macs are untested
+- Intel Macs: the shipped binary is arm64 only; rebuild with `-target x86_64-apple-macos14.0` if needed
 - The widget requires ad-hoc signing with an App Sandbox entitlement
 
 ## License
