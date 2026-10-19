@@ -2,18 +2,37 @@ import AppKit
 
 /// 功率流动画视图。
 /// 三个节点串一条带：左节点(源) — 带 — 右节点(目标)。
-/// 节点是同尺寸圆角卡片，两端视觉重量对齐；带子有最小高度，胶囊数字永远嵌在带里不会溢出。
+///
+/// 性能结构（重要）：静态部分（节点卡片、带子渐变、胶囊、文字、箭头）只在数据或尺寸变化时
+/// 渲染进一张缓存的 NSImage；每帧只重画会动的点阵和扫光。否则 30fps 下每秒要重排 30 次文字、
+/// 重建 30 次 SF Symbol 位图，主线程会被吃满、动画看起来就是"卡"。
 final class FlowView: NSView {
     var snapshot = PowerSnapshot()
     var adapter: AdapterInfo?
+
     private var phase: CGFloat = 0
     private var timer: Timer?
+    private var lastTick: CFTimeInterval = 0
+
+    private var bodyImage: NSImage?
+    private var bodyKey: String = ""
+    private var renderingCache = false
 
     private let nodeW: CGFloat = 46
     private let gap: CGFloat = 9          // 节点与带之间的缝隙
     private let minBand: CGFloat = 22     // 带子最低高度，保证胶囊放得下
     private let maxBand: CGFloat = 56
     private let bandGap: CGFloat = 12     // 两条带之间的间距
+
+    /// 一帧要动的带子
+    private struct Band {
+        let centerY: CGFloat
+        let height: CGFloat
+        let color: NSColor
+        let moving: Bool        // 未充电的空态带不画点
+        let sweep: Bool
+    }
+    private var bands: [Band] = []
 
     override var isFlipped: Bool { true }
     override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: 160) }
@@ -22,13 +41,11 @@ final class FlowView: NSView {
 
     func startAnimating() {
         guard timer == nil else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 10.0, repeats: true) { [weak self] _ in
-            guard let self, self.window != nil else { return }
-            let w = max(self.snapshot.isPluggedIn ? self.snapshot.wallW : self.snapshot.batteryW, 1)
-            let speed = min(max(0.35 + w / 120.0, 0.35), 1.6)
-            self.phase = (self.phase + CGFloat(speed) * 0.030).truncatingRemainder(dividingBy: 1)
-            self.needsDisplay = true
-        }
+        lastTick = CACurrentMediaTime()
+        let t = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in self?.tick() }
+        // .common：窗口拖动、菜单跟踪时默认 mode 会被停掉，动画就"卡住一下"
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     func stopAnimating() {
@@ -36,18 +53,88 @@ final class FlowView: NSView {
         timer = nil
     }
 
+    private func tick() {
+        guard window != nil, !isHiddenOrHasHiddenAncestor else { return }
+        let now = CACurrentMediaTime()
+        // 按真实时间推进：主线程被采样/刷新占用时掉帧，但速度不变（不会忽快忽慢）
+        let dt = min(now - lastTick, 0.25)
+        lastTick = now
+        let w = max(snapshot.isPluggedIn ? snapshot.wallW : snapshot.batteryW, 1)
+        let speed = min(max(0.35 + w / 120.0, 0.35), 1.6)
+        phase = (phase + CGFloat(speed * dt * 0.30)).truncatingRemainder(dividingBy: 1)
+        needsDisplay = true
+    }
+
     func update(_ s: PowerSnapshot, _ a: AdapterInfo?) {
-        let stateChanged = s.isPluggedIn != snapshot.isPluggedIn || s.isCharging != snapshot.isCharging
+        let changed = s.isPluggedIn != snapshot.isPluggedIn
+            || s.isCharging != snapshot.isCharging
+            || s.wallW != snapshot.wallW
+            || s.systemUsageW != snapshot.systemUsageW
+            || s.batteryChargeW != snapshot.batteryChargeW
+            || s.batteryW != snapshot.batteryW
+            || s.percent != snapshot.percent
+            || s.timeToFull != snapshot.timeToFull
+            || s.timeToEmpty != snapshot.timeToEmpty
+            || a?.negotiatedW != adapter?.negotiatedW
         snapshot = s
         adapter = a
-        if stateChanged { needsDisplay = true }
+        if changed { invalidateBody() }
+    }
+
+    private func invalidateBody() {
+        bodyImage = nil
+        needsDisplay = true
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        invalidateBody()
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        invalidateBody()
     }
 
     // MARK: - 绘制
 
     override func draw(_ dirtyRect: NSRect) {
         guard bounds.width > 120, bounds.height > 40 else { return }
-        if snapshot.isPluggedIn { drawPlugged() } else { drawBatteryOnly() }
+        computeGeometry()
+        if renderingCache {           // 正在抓缓存：只画静态层
+            if snapshot.isPluggedIn { drawPluggedBody() } else { drawBatteryOnlyBody() }
+            return
+        }
+
+        let key = bodySignature()
+        if bodyImage == nil || key != bodyKey {
+            bodyImage = renderBody()
+            bodyKey = key
+        }
+        bodyImage?.draw(in: bounds, from: .zero, operation: .sourceOver, fraction: 1,
+                        respectFlipped: true, hints: nil)
+
+        drawMotion()
+    }
+
+    /// 数据签名：任何影响静态画面的值变了才重渲染
+    private func bodySignature() -> String {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        return "\(dark)|\(Int(bounds.width))x\(Int(bounds.height))|\(snapshot.isPluggedIn)|\(snapshot.isCharging)"
+            + "|\(snapshot.wallW)|\(snapshot.systemUsageW)|\(snapshot.batteryChargeW)|\(snapshot.batteryW)"
+            + "|\(snapshot.percent)|\(snapshot.timeToFull)|\(snapshot.timeToEmpty)|\(Settings.shared.lang.rawValue)"
+    }
+
+    /// 把静态层抓成位图。用 NSView.cacheDisplay 而不是手算 CTM：
+    /// 方向和 backing scale 都由 AppKit 处理，避免"文字倒过来/整体镜像"这类翻转错误。
+    private func renderBody() -> NSImage {
+        let img = NSImage(size: bounds.size)
+        guard let rep = bitmapImageRepForCachingDisplay(in: bounds) else { return img }
+        renderingCache = true
+        cacheDisplay(in: bounds, to: rep)
+        renderingCache = false
+        img.addRepresentation(rep)
+        return img
     }
 
     private func bandHeight(_ watts: Double) -> CGFloat {
@@ -59,42 +146,58 @@ final class FlowView: NSView {
 
     private var startX: CGFloat { nodeW + gap }
     private var endX: CGFloat { bounds.width - nodeW - gap }
+    private var bandW: CGFloat { max(endX - startX, 1) }
 
-    // MARK: 插电：墙插 → 系统 / 电池
+    private func computeGeometry() {
+        let h = bounds.height
+        if snapshot.isPluggedIn {
+            let sysW = max(snapshot.systemUsageW, 0.1)
+            let chgW = max(snapshot.batteryChargeW, 0.1)
+            let sysH = bandHeight(sysW)
+            let chgH = bandHeight(chgW)
+            let blockH = sysH + bandGap + chgH
+            let top = (h - blockH) / 2
+            let sysY = top + sysH / 2
+            let batY = top + sysH + bandGap + chgH / 2
+            let charging = snapshot.isCharging && chgW > 0.3
+            bands = [
+                Band(centerY: sysY, height: sysH, color: D.blue, moving: true, sweep: true),
+                Band(centerY: batY, height: charging ? chgH : 6, color: charging ? D.green : D.tertiary,
+                     moving: charging, sweep: charging),
+            ]
+        } else {
+            let bh = bandHeight(max(snapshot.batteryW, 0.1))
+            bands = [Band(centerY: h / 2, height: bh, color: D.orange, moving: true, sweep: true)]
+        }
+    }
 
-    private func drawPlugged() {
+    // MARK: 静态层
+
+    private func drawPluggedBody() {
         let h = bounds.height
         let sysW = max(snapshot.systemUsageW, 0.1)
         let chgW = max(snapshot.batteryChargeW, 0.1)
-        let sysH = bandHeight(sysW)
-        let chgH = bandHeight(chgW)
-        let blockH = sysH + bandGap + chgH
-        let top = (h - blockH) / 2
-        let sysY = top + sysH / 2
-        let batY = top + sysH + bandGap + chgH / 2
         let charging = snapshot.isCharging && chgW > 0.3
+        let sysY = bands[0].centerY
+        let batY = bands[1].centerY
+        let blockH = bands[0].height + bandGap + bands[1].height
+        let top = (h - blockH) / 2
 
-        // 带子先画，节点卡片盖在两端
-        drawBand(centerY: sysY, height: sysH, color: D.blue)
-        if charging {
-            drawBand(centerY: batY, height: chgH, color: D.green)
-        } else {
-            drawBand(centerY: batY, height: 6, color: D.tertiary, dots: false, sweep: false)
-        }
+        for b in bands { drawBandBody(b) }
 
         drawNode(x: 0, centerY: h / 2, height: max(blockH, 46),
                  symbol: "powerplug.fill", value: String(format: "%.1f W", snapshot.wallW), color: D.label)
-        drawNode(x: bounds.width - nodeW, centerY: sysY, height: max(sysH, 46),
+        drawNode(x: bounds.width - nodeW, centerY: sysY, height: max(bands[0].height, 46),
                  symbol: "desktopcomputer", value: S.system.v(Settings.shared.lang), color: D.blue)
         if charging {
-            drawNode(x: bounds.width - nodeW, centerY: batY, height: max(chgH, 46),
+            drawNode(x: bounds.width - nodeW, centerY: batY, height: max(bands[1].height, 46),
                      symbol: "battery.100.bolt", value: S.charge.v(Settings.shared.lang), color: D.green)
-            drawCapsule("\(String(format: "%.1f", chgW)) W", centerY: batY, bandHeight: chgH, color: D.green)
+            drawCapsule("\(String(format: "%.1f", chgW)) W", centerY: batY, bandHeight: bands[1].height, color: D.green)
         } else {
             drawNode(x: bounds.width - nodeW, centerY: batY, height: 46,
                      symbol: "battery.100", value: S.idle.v(Settings.shared.lang), color: D.tertiary)
         }
-        drawCapsule("\(String(format: "%.1f", sysW)) W", centerY: sysY, bandHeight: sysH, color: D.blue)
+        drawCapsule("\(String(format: "%.1f", sysW)) W", centerY: sysY, bandHeight: bands[0].height, color: D.blue)
 
         let tail: String
         if charging {
@@ -107,81 +210,91 @@ final class FlowView: NSView {
         drawCaption(below: top + blockH + 8, text: tail)
     }
 
+    private func drawBatteryOnlyBody() {
+        let b = bands[0]
+        drawBandBody(b)
+        drawNode(x: 0, centerY: b.centerY, height: max(b.height, 46),
+                 symbol: "battery.75", value: String(format: "%.1f W", max(snapshot.batteryW, 0.1)), color: D.orange)
+        drawNode(x: bounds.width - nodeW, centerY: b.centerY, height: max(b.height, 46),
+                 symbol: "desktopcomputer", value: S.system.v(Settings.shared.lang), color: D.orange)
+        drawCapsule("\(String(format: "%.1f", max(snapshot.batteryW, 0.1))) W",
+                    centerY: b.centerY, bandHeight: b.height, color: D.orange)
+        drawCaption(below: b.centerY + b.height / 2 + 7,
+                    text: "\(S.remaining.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToEmpty))")
+    }
+
+    private func bandRect(_ b: Band) -> NSRect {
+        NSRect(x: startX, y: b.centerY - b.height / 2, width: bandW, height: b.height)
+    }
+
+    /// 带子本体：渐变 + 描边 + 方向箭头（静态）
+    private func drawBandBody(_ b: Band) {
+        let rect = bandRect(b)
+        let path = NSBezierPath(roundedRect: rect, xRadius: b.height / 2, yRadius: b.height / 2)
+        let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let a1: CGFloat = isDark ? 0.20 : 0.16
+        let a2: CGFloat = isDark ? 0.46 : 0.38
+        NSGradient(colors: [b.color.withAlphaComponent(a1),
+                            b.color.withAlphaComponent(a2),
+                            b.color.withAlphaComponent(a1)])?.draw(in: path, angle: 0)
+        b.color.withAlphaComponent(isDark ? 0.30 : 0.42).setStroke()
+        path.lineWidth = 0.5
+        path.stroke()
+
+        guard b.height > 12 else { return }
+        let arrowH = min(b.height * 0.42, 12)
+        let ax = endX - 9
+        let arrow = NSBezierPath()
+        arrow.move(to: NSPoint(x: ax - 4, y: b.centerY - arrowH / 2))
+        arrow.line(to: NSPoint(x: ax + 3, y: b.centerY))
+        arrow.line(to: NSPoint(x: ax - 4, y: b.centerY + arrowH / 2))
+        arrow.lineWidth = 1.6
+        arrow.lineCapStyle = .round
+        arrow.lineJoinStyle = .round
+        b.color.withAlphaComponent(0.85).setStroke()
+        arrow.stroke()
+    }
+
+    /// 动画层：只有点和扫光，每帧重画
+    private func drawMotion() {
+        for b in bands {
+            guard b.height > 12 else { continue }
+            let rect = bandRect(b)
+
+            if b.moving {
+                let n = 6
+                let d: CGFloat = 3.2
+                for i in 0..<n {
+                    let t = (CGFloat(i) / CGFloat(n) + phase).truncatingRemainder(dividingBy: 1)
+                    let x = startX + 14 + (bandW - 28) * t
+                    let alpha = sin(t * .pi) * 0.65 + 0.25
+                    b.color.withAlphaComponent(alpha).setFill()
+                    NSBezierPath(ovalIn: NSRect(x: x - d / 2, y: b.centerY - d / 2, width: d, height: d)).fill()
+                }
+            }
+
+            guard b.sweep else { continue }
+            NSGraphicsContext.saveGraphicsState()
+            NSBezierPath(roundedRect: rect, xRadius: b.height / 2, yRadius: b.height / 2).addClip()
+            let hx = startX + bandW * phase
+            NSGradient(colors: [b.color.withAlphaComponent(0),
+                                b.color.withAlphaComponent(0.14),
+                                b.color.withAlphaComponent(0)])?
+                .draw(in: NSRect(x: hx - bandW * 0.14, y: rect.minY,
+                                 width: bandW * 0.28, height: b.height), angle: 0)
+            NSGraphicsContext.restoreGraphicsState()
+        }
+    }
+
     /// 带子下方的一行小字（预计时间），顺便把竖向留白填掉
     private func drawCaption(below y: CGFloat, text: String) {
         let font = D.text(10)
         let size = text.size(font)
-        guard y + size.height < bounds.height else { return }
-        text.draw(at: NSPoint(x: bounds.midX - size.width / 2, y: y),
+        // 视图比内容矮时贴底画，而不是整行丢掉
+        let yy = min(y, bounds.height - size.height - 1)
+        guard yy >= 0 else { return }
+        text.draw(at: NSPoint(x: (bounds.midX - size.width / 2).rounded(), y: yy.rounded()),
                   withAttributes: [.font: font, .foregroundColor: D.secondary])
-    }
-
-    // MARK: 放电：电池 → 系统
-
-    private func drawBatteryOnly() {
-        let h = bounds.height
-        let batW = max(snapshot.batteryW, 0.1)
-        let bh = bandHeight(batW)
-        let y = h / 2
-
-        drawBand(centerY: y, height: bh, color: D.orange)
-        drawNode(x: 0, centerY: y, height: max(bh, 46),
-                 symbol: "battery.75", value: String(format: "%.1f W", batW), color: D.orange)
-        drawNode(x: bounds.width - nodeW, centerY: y, height: max(bh, 46),
-                 symbol: "desktopcomputer", value: S.system.v(Settings.shared.lang), color: D.orange)
-        drawCapsule("\(String(format: "%.1f", batW)) W", centerY: y, bandHeight: bh, color: D.orange)
-        drawCaption(below: y + bh / 2 + 7, text: "\(S.remaining.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToEmpty))")
-    }
-
-    // MARK: - 元件
-
-    private func drawBand(centerY: CGFloat, height: CGFloat, color: NSColor,
-                          dots: Bool = true, sweep: Bool = true) {
-        let rect = NSRect(x: startX, y: centerY - height / 2, width: max(endX - startX, 1), height: height)
-        let path = NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2)
-
-        let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        let a1: CGFloat = isDark ? 0.20 : 0.16
-        let a2: CGFloat = isDark ? 0.46 : 0.38
-        NSGradient(colors: [color.withAlphaComponent(a1),
-                            color.withAlphaComponent(a2),
-                            color.withAlphaComponent(a1)])?.draw(in: path, angle: 0)
-        color.withAlphaComponent(isDark ? 0.30 : 0.42).setStroke()
-        path.lineWidth = 0.5
-        path.stroke()
-
-        guard dots, height > 12 else { return }
-        let n = 6
-        for i in 0..<n {
-            let t = (CGFloat(i) / CGFloat(n) + phase).truncatingRemainder(dividingBy: 1)
-            let x = startX + 14 + (endX - startX - 28) * t
-            let alpha = sin(t * .pi) * 0.65 + 0.25
-            let d: CGFloat = 3.2
-            color.withAlphaComponent(alpha).setFill()
-            NSBezierPath(ovalIn: NSRect(x: x - d / 2, y: centerY - d / 2, width: d, height: d)).fill()
-        }
-
-        // 方向箭头：贴在带子右端内侧
-        let arrowH = min(height * 0.42, 12)
-        let ax = endX - 9
-        let arrow = NSBezierPath()
-        arrow.move(to: NSPoint(x: ax - 4, y: centerY - arrowH / 2))
-        arrow.line(to: NSPoint(x: ax + 3, y: centerY))
-        arrow.line(to: NSPoint(x: ax - 4, y: centerY + arrowH / 2))
-        arrow.lineWidth = 1.6
-        arrow.lineCapStyle = .round
-        arrow.lineJoinStyle = .round
-        color.withAlphaComponent(0.85).setStroke()
-        arrow.stroke()
-
-        guard sweep else { return }
-        NSGraphicsContext.saveGraphicsState()
-        path.addClip()
-        let bandW = endX - startX
-        let hx = startX + bandW * phase
-        let hi = NSGradient(colors: [color.withAlphaComponent(0), color.withAlphaComponent(0.14), color.withAlphaComponent(0)])
-        hi?.draw(in: NSRect(x: hx - bandW * 0.14, y: centerY - height / 2, width: bandW * 0.28, height: height), angle: 0)
-        NSGraphicsContext.restoreGraphicsState()
     }
 
     /// 两端统一的节点卡片：图标在上、文字在下，整体垂直居中
@@ -206,16 +319,16 @@ final class FlowView: NSView {
             img.draw(in: NSRect(x: rect.midX - iconSize.width / 2, y: top,
                                 width: iconSize.width, height: iconSize.height))
         }
-        value.draw(at: NSPoint(x: rect.midX - textSize.width / 2, y: top + iconSize.height + 3),
-                   withAttributes: [.font: font, .foregroundColor: D.secondary])
+        let np = NSPoint(x: (rect.midX - textSize.width / 2).rounded(), y: (top + iconSize.height + 3).rounded())
+        value.draw(at: np, withAttributes: [.font: font, .foregroundColor: D.secondary])
     }
 
     /// 数字胶囊：高度跟着带子走但永远留 5pt 余量，保证"嵌在带子里"
     private func drawCapsule(_ text: String, centerY: CGFloat, bandHeight: CGFloat, color: NSColor) {
-        let font = D.rounded(11.5, .semibold)
+        let font = D.text(13, .semibold)
         let size = text.size(font)
-        let capH = min(size.height + 7, bandHeight - 4)
-        let capW = size.width + 18
+        let capH = min(size.height + 8, bandHeight - 3)
+        let capW = size.width + 20
         let rect = NSRect(x: (startX + endX) / 2 - capW / 2, y: centerY - capH / 2, width: capW, height: capH)
         color.withAlphaComponent(0.95).setFill()
         let capPath = NSBezierPath(roundedRect: rect, xRadius: capH / 2, yRadius: capH / 2)
@@ -223,7 +336,8 @@ final class FlowView: NSView {
         NSColor.white.withAlphaComponent(0.18).setStroke()
         capPath.lineWidth = 0.5
         capPath.stroke()
-        text.draw(at: NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2),
-                  withAttributes: [.font: font, .foregroundColor: NSColor.white])
+        let tp = NSPoint(x: (rect.midX - size.width / 2).rounded(),
+                         y: (rect.midY - size.height / 2).rounded())
+        text.draw(at: tp, withAttributes: [.font: font, .foregroundColor: NSColor.white])
     }
 }
