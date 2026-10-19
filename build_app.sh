@@ -5,6 +5,12 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="PowerPulse"
+
+# 签名身份：默认 ad-hoc；要分发就传 Developer ID
+#   IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+#   NOTARY_PROFILE="powerpulse" ./build_app.sh
+IDENTITY="${IDENTITY:--}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 APP_DIR="$PROJECT_DIR/$APP_NAME.app"
 VERSION="${VERSION:-2.0.0}"
 BUILD_NUM="${BUILD_NUM:-200}"
@@ -62,7 +68,7 @@ cat > "build/app.entitlements" <<AENT
 <key>com.apple.security.application-groups</key><array><string>group.com.autumnpants.powerpulse</string></array>
 </dict></plist>
 AENT
-codesign --force --sign - --entitlements "build/app.entitlements" "$APP_DIR" >/dev/null 2>&1 || echo "⚠️  ad-hoc 签名失败（不影响本机运行）"
+# 外层签名放到最后：必须等内容全部就位（尤其是 appex），否则签名封不住插件
 
 # ---------- 桌面小组件（WidgetKit） ----------
 WIDGET_NAME="PowerPulseWidget"
@@ -110,7 +116,36 @@ WEOF
 <key>com.apple.security.application-groups</key><array><string>group.com.autumnpants.powerpulse</string></array>
 </dict></plist>
 WENT
-  codesign --force --sign - --entitlements "build/widget.entitlements" "$EXT_DIR" >/dev/null 2>&1 || echo "⚠️  appex 签名失败"
+  if [ "$IDENTITY" = "-" ]; then
+    codesign --force --sign - --entitlements "build/widget.entitlements" "$EXT_DIR" >/dev/null 2>&1 || echo "⚠️  appex 签名失败"
+  else
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" \
+      --entitlements "build/widget.entitlements" "$EXT_DIR" || { echo "❌ appex 签名失败"; exit 1; }
+  fi
+fi
+
+# ---------- 签名外层（顺序：先 appex 后 app，且不要 --deep） ----------
+if [ "$IDENTITY" = "-" ]; then
+  codesign --force --sign - --entitlements "build/app.entitlements" "$APP_DIR" >/dev/null 2>&1 \
+    || echo "⚠️  ad-hoc 签名失败（不影响本机运行）"
+  echo "🔏 已用 ad-hoc 签名（对外分发仍会被 Gatekeeper 拦）"
+else
+  codesign --force --options runtime --timestamp --sign "$IDENTITY" \
+    --entitlements "build/app.entitlements" "$APP_DIR" || { echo "❌ app 签名失败"; exit 1; }
+  echo "🔏 已用 Developer ID 签名：$IDENTITY"
+  codesign --verify --strict --verbose=2 "$APP_DIR" 2>&1 | tail -2
+fi
+
+# ---------- 可选：公证 ----------
+if [ -n "$NOTARY_PROFILE" ]; then
+  echo "📮 提交公证（profile: $NOTARY_PROFILE）..."
+  rm -f build/notarize.zip
+  ditto -c -k --keepParent "$APP_DIR" build/notarize.zip
+  xcrun notarytool submit build/notarize.zip --keychain-profile "$NOTARY_PROFILE" --wait \
+    || { echo "❌ 公证失败"; exit 1; }
+  xcrun stapler staple "$APP_DIR" || { echo "❌ stapler 失败"; exit 1; }
+  spctl -a -vvv -t install "$APP_DIR" 2>&1 | tail -2
+  echo "✅ 公证并装订完成"
 fi
 
 echo ""
