@@ -786,6 +786,27 @@ page = page.replace("</head>", `<style>${PALETTE}</style>
 page = page.replace('<html lang="en">', '<html lang="zh-CN">');
 page = page.replace('<main class="iso-page">', '<main class="iso-page"><a class="pb-back" href="../index.html">← PowerPulse</a>');
 
+const EMBED = `<style>
+html.embed .pb-back{display:none}
+html.embed,html.embed body{background:#fff;color-scheme:light}
+html.embed .iso-page{padding:0;margin:0 auto;width:100%;max-width:880px}
+</style>
+<script>
+(function(){
+  if(!new URLSearchParams(location.search).has("embed")) return;
+  document.documentElement.classList.add("embed");
+  var last=0;
+  function post(){
+    var h=Math.ceil(document.documentElement.scrollHeight);
+    if(Math.abs(h-last)>2){last=h;parent.postMessage({type:"pb-height",h:h},"*");}
+  }
+  addEventListener("load",post);
+  if(window.ResizeObserver) new ResizeObserver(post).observe(document.body);
+  setTimeout(post,300); setTimeout(post,1200);
+})();
+</script>`;
+{ const at = page.lastIndexOf("</body>"); page = page.slice(0, at) + EMBED + page.slice(at); }
+
 mkdirSync(join(HERE, "shots"), { recursive: true });
 mkdirSync(OUT, { recursive: true });
 writeFileSync(join(OUT, "powerbench.html"), page);

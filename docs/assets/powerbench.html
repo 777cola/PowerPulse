@@ -1109,4 +1109,22 @@ stage.addEventListener("keydown", (event) => {
 });
 if (still.matches) { touring = false; load = 33.7; draw(0); }
 else run();
+</script><style>
+html.embed .pb-back{display:none}
+html.embed,html.embed body{background:#fff;color-scheme:light}
+html.embed .iso-page{padding:0;margin:0 auto;width:100%;max-width:880px}
+</style>
+<script>
+(function(){
+  if(!new URLSearchParams(location.search).has("embed")) return;
+  document.documentElement.classList.add("embed");
+  var last=0;
+  function post(){
+    var h=Math.ceil(document.documentElement.scrollHeight);
+    if(Math.abs(h-last)>2){last=h;parent.postMessage({type:"pb-height",h:h},"*");}
+  }
+  addEventListener("load",post);
+  if(window.ResizeObserver) new ResizeObserver(post).observe(document.body);
+  setTimeout(post,300); setTimeout(post,1200);
+})();
 </script></body></html>

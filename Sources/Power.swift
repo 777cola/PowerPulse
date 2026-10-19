@@ -417,17 +417,17 @@ extension PowerSnapshot {
         var d = PowerSnapshot()
         d.isPluggedIn = true
         d.isCharging = true
-        d.percent = 86
-        d.wallW = 44.2
-        d.systemLoadW = 12.4
-        d.batteryW = 31.8
-        d.currentCapacity = 3700
+        d.percent = 87
+        d.wallW = 52.3
+        d.systemLoadW = 12.8
+        d.batteryW = 39.5
+        d.currentCapacity = 3738
         d.fullCapacity = 4297
         d.designCapacity = 4629
         d.cycleCount = 176
-        d.temperature = 34.7
-        d.timeToFull = 41
-        d.timeToEmpty = 186
+        d.temperature = 33.2
+        d.timeToFull = 38
+        d.timeToEmpty = 192
         return d
     }
 }
@@ -435,9 +435,9 @@ extension PowerSnapshot {
 extension AdapterInfo {
     static func demoAdapter() -> AdapterInfo {
         var a = AdapterInfo()
-        a.negotiatedW = 44
+        a.negotiatedW = 52
         a.volts = 20
-        a.amps = 2.2
+        a.amps = 2.6
         a.maxW = 60
         a.tier = 2
         a.name = "60W USB-C Power Adapter"
