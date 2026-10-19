@@ -723,12 +723,12 @@ const PALETTE = `
   --anatomy-page:#f5f8fc;--anatomy-card:#ffffff;
   --anatomy-text:#475569;--anatomy-strong:#1A4B8C;--anatomy-muted:#64748b;
   --anatomy-paper:#ffffff;--anatomy-face:#fbfdff;--anatomy-top:#ffffff;
-  --anatomy-shade-0:#a8bed6;--anatomy-shade-1:#c2d3e5;--anatomy-shade-2:#d9e5f2;--anatomy-shade-3:#edf4fa;
+  --anatomy-shade-0:#86a4c5;--anatomy-shade-1:#b3c7dc;--anatomy-shade-2:#cfdcea;--anatomy-shade-3:#e6eef7;
   --anatomy-lit-top:#fff1e2;--anatomy-lit-shade:#f8d0a8;
   --anatomy-hi:#1A4B8C;--anatomy-mid:#64748b;--anatomy-lo:#9db2ca;--anatomy-faint:#c9d8e8;--anatomy-lit:#E86C00;
   --anatomy-halo:#1A4B8C;--anatomy-halo-opacity:.14;--anatomy-dot:#1A4B8C;
   --anatomy-red:#c2410c;--anatomy-green:#0f8a4a;--anatomy-blue:#1A4B8C;
-  --anatomy-weight:.6px;
+  --anatomy-weight:.8px;
 }
 .iso-solid.pb-strong>.iso-shade[data-shade="0"]{fill:#8aa4c2;stroke:#8aa4c2}
 .iso-solid.pb-strong>.iso-shade[data-shade="1"]{fill:#9db5ce;stroke:#9db5ce}
