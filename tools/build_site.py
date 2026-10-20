@@ -209,6 +209,7 @@ pre .c{color:#7f93ad}
 .dl img{width:76px;height:76px;border-radius:18px;box-shadow:var(--shadow-m)}
 .dl h2{margin:0;font-size:clamp(20px,2.2vw,26px);letter-spacing:-.022em;font-weight:650}
 .dl p{margin:7px 0 0;color:var(--muted);font-size:13.5px;line-height:1.6;max-width:44em}
+.dl-note{margin-top:9px!important;font-size:12.5px!important;color:var(--muted);opacity:.85}
 .meta{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#5b6d82;font-family:var(--mono)}
 .meta .sep{opacity:.45}
 .dl-cta{min-width:0}
@@ -311,6 +312,7 @@ ZH = dict(
     d_title="装上，就一直在菜单栏里",
     d_sub="免安装器，拖进「应用程序」即可。首次打开若提示未验证的开发者，右键 → 打开。",
     d_btn="下载 2.0.0", d_src="从源码构建",
+    d_note="ad-hoc 签名、未公证：首次打开若被拦，去「系统设置 → 隐私与安全性 → 仍要打开」。",
     d_meta=["v2.0.0", ".zip", "649 KB", "macOS 14.0+", "Apple Silicon", "MIT"],
     foot="© 2026 AutumnPants · PowerPulse",
     foot_links=[("https://github.com/777cola/PowerPulse", "GitHub"),
@@ -374,6 +376,7 @@ EN = dict(
     d_title="Install once, live in the menu bar",
     d_sub="No installer — drag it into Applications. If macOS warns about an unidentified developer on first launch, right-click → Open.",
     d_btn="Download 2.0.0", d_src="Build from source",
+    d_note="Ad-hoc signed, not notarized: if Gatekeeper blocks the first launch, allow it in System Settings → Privacy & Security.",
     d_meta=["v2.0.0", ".zip", "649 KB", "macOS 14.0+", "Apple Silicon", "MIT"],
     foot="© 2026 AutumnPants · PowerPulse",
     foot_links=[("https://github.com/777cola/PowerPulse", "GitHub"),
@@ -520,7 +523,7 @@ def render(c, prefix, other_href, shot_suffix=""):
 <section class="sec" id="download"><div class="wrap">
   <div class="dl">
     <img src="{prefix}img/appicon.png" alt="PowerPulse icon">
-    <div><h2>{c['d_title']}</h2><p>{c['d_sub']}</p><div class="meta">{meta}</div></div>
+    <div><h2>{c['d_title']}</h2><p>{c['d_sub']}</p><div class="meta">{meta}</div><p class="dl-note">{c['d_note']}</p></div>
     <div class="dl-cta">
       <a class="btn btn-primary" href="{RELEASE}">{c['d_btn']}</a>
     </div>

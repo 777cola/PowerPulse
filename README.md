@@ -73,7 +73,13 @@
 
 到 [Releases](https://github.com/777cola/PowerPulse/releases) 下载，拖进「应用程序」。
 
-App 用 ad-hoc 签名，首次打开若提示「无法验证开发者」，右键 → 打开。
+App 用 ad-hoc 签名，没有 Apple 公证，首次打开会被 Gatekeeper 拦一次。三种放行方式，任选一种：
+
+1. **系统设置**：双击报错后 → 系统设置 → 隐私与安全性 → 拉到底 → 「仍要打开」。（macOS 15 起右键「打开」已不能绕过，只能用这里）
+2. **右键打开**：macOS 14 及更早可用，右键 App → 打开 → 再点一次「打开」。
+3. **终端**：`xattr -dr com.apple.quarantine /Applications/PowerPulse.app`，只做一次。
+
+为什么没有公证：Developer ID 证书需要付费开发者账号（99 美元/年）。有这个账号后，`IDENTITY="Developer ID Application: ..." NOTARY_PROFILE=powerpulse ./build_app.sh` 就能出正式签名并公证的版本。
 
 ### 从源码构建
 
@@ -206,7 +212,14 @@ Cable e-marker is not exposed by macOS, so cable quality can only be inferred fr
 
 ## Install
 
-Download from [Releases](https://github.com/777cola/PowerPulse/releases), drag to Applications. Ad-hoc signed — if Gatekeeper complains, right-click → Open.
+Download from [Releases](https://github.com/777cola/PowerPulse/releases), drag to Applications.
+
+The build is ad-hoc signed and **not notarized**, so Gatekeeper blocks the first launch. Any one of these works:
+
+1. **System Settings** — after the error, go to Privacy & Security, scroll down, click "Open Anyway". (On macOS 15+ the old right-click → Open shortcut no longer bypasses Gatekeeper.)
+2. **Terminal** — `xattr -dr com.apple.quarantine /Applications/PowerPulse.app` (once).
+
+Notarization needs a paid Apple Developer account (USD 99/yr). Once you have one: `IDENTITY="Developer ID Application: ..." NOTARY_PROFILE=powerpulse ./build_app.sh`.
 
 Build from source (macOS 14+, Command Line Tools):
 
