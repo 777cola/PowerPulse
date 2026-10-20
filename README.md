@@ -71,7 +71,15 @@
 
 ### 下载
 
-到 [Releases](https://github.com/777cola/PowerPulse/releases) 下载，拖进「应用程序」。
+**一行装好（推荐，不会有任何弹窗）**——终端下载的文件不带隔离标记，Gatekeeper 不拦：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/777cola/PowerPulse/main/install.sh | bash
+```
+
+脚本做四件事：查最新版、下载、解压到 `/Applications`、启动。想升级时重跑同一条。
+
+**手动下载**：到 [Releases](https://github.com/777cola/PowerPulse/releases) 下载，拖进「应用程序」。
 
 App 用 ad-hoc 签名，没有 Apple 公证，首次打开会被 Gatekeeper 拦一次。三种放行方式，任选一种：
 
@@ -212,7 +220,15 @@ Cable e-marker is not exposed by macOS, so cable quality can only be inferred fr
 
 ## Install
 
-Download from [Releases](https://github.com/777cola/PowerPulse/releases), drag to Applications.
+**One line, no dialogs at all** — files fetched with curl carry no quarantine flag, so Gatekeeper never engages:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/777cola/PowerPulse/main/install.sh | bash
+```
+
+It finds the latest release, downloads it, unpacks into `/Applications`, and launches it. Re-run the same line to upgrade.
+
+**Manual download**: grab the zip from [Releases](https://github.com/777cola/PowerPulse/releases) and drag it to Applications.
 
 The build is ad-hoc signed and **not notarized**, so Gatekeeper blocks the first launch. Any one of these works:
 
