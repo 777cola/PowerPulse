@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import ServiceManagement
 
 // MARK: - 弹窗
 
@@ -179,6 +180,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        // 命令行开关：--login=on / --login=off / --login=status
+        // 用来在没有界面自动化权限时核对登录项，装完直接跑一条。
+        if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--login=") }) {
+            let mode = String(arg.dropFirst("--login=".count))
+            switch mode {
+            case "on":  print(LoginItem.set(true) ? "login=on" : "login=failed")
+            case "off": print(LoginItem.set(false) ? "login=off" : "login=failed")
+            default:    print("login=\(LoginItem.isOn ? "on" : "off") status=\(SMAppService.mainApp.status.rawValue)")
+            }
+            if mode != "status" { print("status=\(SMAppService.mainApp.status.rawValue)") }
+            exit(0)
+        }
         let skip = Set((CommandLine.arguments.first(where: { $0.hasPrefix("--skip=") })?
             .replacingOccurrences(of: "--skip=", with: "") ?? "").split(separator: ",").map(String.init))
         if !skip.contains("history") {
