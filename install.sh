@@ -18,9 +18,16 @@ trap 'rm -rf "$TMP"' EXIT
 say() { printf '\033[1m%s\033[0m\n' "$*"; }
 
 say "→ 查询最新版本"
-URL="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" \
+URL="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
   | grep -o '"browser_download_url": *"[^"]*\.zip"' \
   | head -1 | cut -d'"' -f4)"
+
+# api.github.com 不通时，退一步从 release 页面抓
+if [ -z "$URL" ]; then
+  TAG="$(curl -fsSL "https://github.com/$REPO/releases/latest" 2>/dev/null \
+    | grep -o '/releases/tag/[^"]*' | head -1 | sed 's#.*/tag/##')"
+  [ -n "${TAG:-}" ] && URL="https://github.com/$REPO/releases/download/$TAG/PowerPulse-${TAG#v}.zip"
+fi
 
 if [ -z "$URL" ]; then
   echo "取不到下载地址。手动安装：https://github.com/$REPO/releases/latest" >&2

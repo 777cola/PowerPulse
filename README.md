@@ -74,7 +74,7 @@
 **一行装好（推荐，不会有任何弹窗）**——终端下载的文件不带隔离标记，Gatekeeper 不拦：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/777cola/PowerPulse/main/install.sh | bash
+curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash
 ```
 
 脚本做四件事：查最新版、下载、解压到 `/Applications`、启动。想升级时重跑同一条。
@@ -223,7 +223,7 @@ Cable e-marker is not exposed by macOS, so cable quality can only be inferred fr
 **One line, no dialogs at all** — files fetched with curl carry no quarantine flag, so Gatekeeper never engages:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/777cola/PowerPulse/main/install.sh | bash
+curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash
 ```
 
 It finds the latest release, downloads it, unpacks into `/Applications`, and launches it. Re-run the same line to upgrade.
