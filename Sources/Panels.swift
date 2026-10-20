@@ -133,9 +133,42 @@ final class MonitorPanel: Panel {
     private let chart = LineChartView()
     private let energyStack = NSStackView()
     private var energyRows: [KVRow] = []
-    private let liveBuffer = RingBuffer(capacity: 90)
+    /// 缓冲按"保留 5 分钟"给容量，而不是写死点数：
+    /// 1 秒采样 = 300 点，2 秒采样 = 150 点。之前写死 90 点（默认 1 秒下只有 90 秒），
+    /// 跟界面上/README 里说的「5 分钟历史」对不上。
+    private let liveBuffer = RingBuffer(capacity: max(60, Int(300 / max(Settings.shared.interval, 0.5))))
+    private var lastTickMinute = -1
 
     override var preferredHeight: CGFloat { 376 }
+
+    /// 自检/拍图用：--plugged 时用一条合成曲线把 5 分钟缓冲填满，
+    /// 否则功率曲线永远「暂无记录」，截图没法用。
+    private func seedDemoCurveIfNeeded() {
+        guard CommandLine.arguments.contains("--plugged"), liveBuffer.count < 5 else { return }
+        let n = liveBuffer.capacity
+        for i in 0..<n {
+            let t = Double(i) / Double(max(n - 1, 1))
+            let v = 24 + 30 * (0.5 + 0.5 * sin(t * 9.4)) + 6 * sin(t * 33)
+            liveBuffer.append(max(4, min(94, v)))
+        }
+    }
+
+    /// 曲线的时间刻度：用 Date 算，跨零点由 DateFormatter 进位（不会出现 24:16、27:16）。
+    /// 每分钟才重建一次，避免每秒 300 次字符串格式化。
+    private func updateTimeTicks() {
+        let minute = Int(Date().timeIntervalSince1970 / 60)
+        guard minute != lastTickMinute else { return }
+        lastTickMinute = minute
+        let span = Double(liveBuffer.capacity) * max(Settings.shared.interval, 0.5)
+        let now = Date()
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        chart.ticks = [
+            (0, f.string(from: now.addingTimeInterval(-span))),
+            (0.5, f.string(from: now.addingTimeInterval(-span / 2))),
+            (1, f.string(from: now)),
+        ]
+    }
 
     init() {
         super.init(frame: .zero)
@@ -185,6 +218,7 @@ final class MonitorPanel: Panel {
     required init?(coder: NSCoder) { fatalError() }
 
     override func refresh(power: PowerSnapshot, adapter: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
+        seedDemoCurveIfNeeded()
         cpuRow.setValue(String(format: "%.0f%%", stats.cpu))
         gpuRow.setValue(String(format: "%.0f%%", stats.gpu))
         memRow.setValue(String(format: "%.1f / %.0f GB", stats.memUsedGB, stats.memTotalGB))
@@ -194,6 +228,7 @@ final class MonitorPanel: Panel {
 
         liveBuffer.append(power.systemUsageW)
         chart.set(liveBuffer.array)
+        updateTimeTicks()
 
         // 耗电排行
         let top = Array(energy.prefix(5))
@@ -277,6 +312,7 @@ final class HistoryPanel: Panel {
             empty.stringValue = "\(S.exportFailed.v(lang))：\(why)"
         }
     }
+
 
     override func refresh(power: PowerSnapshot, adapter: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
         let session = HistoryStore.shared.currentSession()
@@ -587,6 +623,8 @@ final class SettingsPanel: Panel {
 final class RingBuffer {
     private var buf: [Double] = []
     private let cap: Int
+    var capacity: Int { cap }
+    var count: Int { buf.count }
     init(capacity: Int) { cap = capacity }
     func append(_ v: Double) {
         buf.append(v)

@@ -4,6 +4,8 @@ import AppKit
 final class LineChartView: NSView {
     var values: [Double] = []
     var labels: [String] = []
+    /// 固定刻度：(横向位置 0…1, 文本)。时间轴用它，避免"每个点一个标签"再拍脑袋算小时。
+    var ticks: [(CGFloat, String)] = []
     var color: NSColor = D.green
     var unit = "W"
     private var minMax: (Double, Double) = (0, 10)
@@ -71,8 +73,20 @@ final class LineChartView: NSView {
                    withAttributes: [.font: f, .foregroundColor: D.tertiary])
         }
 
+        // 固定刻度优先（时间轴走这条）
+        if !ticks.isEmpty {
+            let f = D.text(8)
+            for (frac, l) in ticks {
+                let sz = l.size(f)
+                var x = b.minX + b.width * frac - sz.width / 2
+                x = min(max(x, b.minX), b.maxX - sz.width)
+                l.draw(at: NSPoint(x: x, y: b.minY + 1),
+                       withAttributes: [.font: f, .foregroundColor: D.tertiary])
+            }
+        }
+
         // 时间轴
-        if labels.count > 1 {
+        if ticks.isEmpty, labels.count > 1 {
             let f = D.text(8)
             for (i, l) in labels.enumerated() where i % max(labels.count / 3, 1) == 0 {
                 let x = b.minX + b.width * CGFloat(i) / CGFloat(labels.count - 1)
@@ -88,6 +102,8 @@ final class LineChartView: NSView {
 final class BarChartView: NSView {
     var values: [Double] = []
     var labels: [String] = []
+    /// 固定刻度：(横向位置 0…1, 文本)。时间轴用它，避免"每个点一个标签"再拍脑袋算小时。
+    var ticks: [(CGFloat, String)] = []
     var color: NSColor = D.blue
 
     override var isFlipped: Bool { false }
