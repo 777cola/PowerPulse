@@ -566,6 +566,8 @@ final class ProbeEnergy {
 /// 递归找出超出父视图边界 / 宽度不够的控件
 func auditOverflow(_ v: NSView, path: String = "") -> [String] {
     var out: [String] = []
+    // 滚动视图里的文档视图本来就会比裁剪区高，那不是溢出
+    if v is NSScrollView || v is NSClipView { return [] }
     for sub in v.subviews where !sub.isHidden {
         let f = sub.frame
         let b = v.bounds
