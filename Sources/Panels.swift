@@ -99,13 +99,16 @@ final class NowPanel: Panel {
         // 台式机（Mac Studio / mini / Pro）：没有电池，四张卡都不能写 0 / 放电中
         if !s.hasBattery {
             wallCard.update(value: "—");  wallCard.setDimmed(true)
-            sysCard.update(value: "—")
-            batCard.update(title: S.batteryOut.v(lang), value: "—", valueColor: D.tertiary)
-            stateCard.update(title: S.battery.v(lang), value: "—", valueColor: D.tertiary)
+            sysCard.update(value: s.desktopW > 0 ? String(format: "%.1f W", s.desktopW) : "—")
+            // 没有电池，这两张卡留着只会让人以为读不到数
+            batCard.isHidden = true
+            stateCard.isHidden = true
             adapterBox.isHidden = true
             return
         }
 
+        batCard.isHidden = false
+        stateCard.isHidden = false
         wallCard.update(value: s.isPluggedIn ? String(format: "%.1f W", s.wallW) : "—")
         wallCard.setDimmed(!s.isPluggedIn)
         sysCard.update(value: String(format: "%.1f W", s.systemUsageW))

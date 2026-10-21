@@ -14,6 +14,7 @@ struct PowerSnapshot {
     var isPluggedIn = false
     var percent = 0
     var hasBattery = false          // 台式机（Mac Studio / mini / Pro）没有 AppleSmartBattery
+    var desktopW: Double = 0        // 台式机整机功率（SMC PSTR/PDTR），0 = 读不到
     var currentCapacity = 0        // mAh
     var fullCapacity = 0
     var designCapacity = 0
@@ -162,7 +163,12 @@ final class Sampler {
     private func readPower() -> (PowerSnapshot, AdapterInfo?) {
         var snap = PowerSnapshot()
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
-        guard service != IO_OBJECT_NULL else { return (snap, nil) }
+        guard service != IO_OBJECT_NULL else {
+            // 台式机：没有电池，瓦数只能问 SMC。读不到就留 0，界面显示 —
+            snap.hasBattery = false
+            if let w = SMCPower.systemWatts() { snap.desktopW = w }
+            return (snap, nil)
+        }
         defer { IOObjectRelease(service) }
         snap.hasBattery = true
 

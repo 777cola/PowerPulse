@@ -405,10 +405,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 第一帧采样之前 snapshot 是默认值（hasBattery=false、percent=0），
         // 这时候照着它画会出现「插头闪一下」或「0%」，宁可不画
         guard hasSampled else { return }
-        // 台式机没有电池：插座图标 + CPU 占用（整机瓦数在台式机上读不到）
+        // 台式机没有电池：插座 + 整机功率（SMC 读得到时），读不到退回落 CPU 占用
         if !snapshot.hasBattery {
+            let watts = snapshot.desktopW
             let cpu = Int(stats.cpu.rounded())
-            let key = "nobattery|\(cpu)"
+            let text = watts > 0 ? "\(Int(watts.rounded())) W" : "\(cpu)%"
+            let key = "nobattery|\(text)"
             guard key != lastTitleKey else { return }
             lastTitleKey = key
             if button.image == nil || button.image?.accessibilityDescription != "PowerPulse" {
@@ -416,10 +418,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 button.image?.isTemplate = true
             }
             button.attributedTitle = NSAttributedString(
-                string: " \(cpu)%",
+                string: " \(text)",
                 attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
                              .foregroundColor: NSColor.labelColor])
-            button.toolTip = S.noBattery.v(Settings.shared.lang) + " · " + S.cpuLoad.v(Settings.shared.lang)
+            button.toolTip = S.noBattery.v(Settings.shared.lang) + " · "
+                + (watts > 0 ? "SMC PSTR" : S.cpuLoad.v(Settings.shared.lang))
             return
         }
         // 有电池：先把插头图标摘掉，否则会和电池图标并排出现
@@ -596,8 +599,9 @@ extension PopoverController {
             adapter = .demoAdapter()
         }
         if CommandLine.arguments.contains("--nobattery") {
-            power = PowerSnapshot()      // 台式机：全零
+            power = PowerSnapshot()      // 台式机：没有电池
             power.hasBattery = false
+            power.desktopW = SMCPower.systemWatts() ?? 0   // 本机 SMC 有就真读，没有就 0
             adapter = nil
         }
         let stats = Sampler.shared.systemOnce()
@@ -678,7 +682,9 @@ enum StatusBarRender {
         // 台式机：插座 + CPU%，电池机：电池图标 + 百分比
         if CommandLine.arguments.contains("--nobattery") {
             try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-            for cpu in [7, 38, 86] {
+            let watts = SMCPower.systemWatts()
+            let demos: [String] = (watts.map { [String(format: "%.0f W", $0)] } ?? []) + ["7%", "38%", "86%"]
+            for label in demos {
                 // 渲染到纯位图时没有系统着色，template 图会黑底黑图，得自己上色
                 let plug = Icon.tinted("powerplug.fill", color: .labelColor, size: 13)
                 let t = NSMutableAttributedString()
@@ -687,7 +693,7 @@ enum StatusBarRender {
                     att.image = plug
                     t.append(NSAttributedString(attachment: att))
                 }
-                t.append(NSAttributedString(string: "\(cpu)%", attributes: [
+                t.append(NSAttributedString(string: "\(label)", attributes: [
                     .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
                     .foregroundColor: NSColor.labelColor]))
                 let sz = t.size()
@@ -705,9 +711,10 @@ enum StatusBarRender {
                 t.draw(at: NSPoint(x: 6, y: (CGFloat(H) - sz.height) / 2 + 1))
                 NSGraphicsContext.restoreGraphicsState()
                 if let data = rep.representation(using: .png, properties: [:]) {
-                    try? data.write(to: URL(fileURLWithPath: dir + "/status-desktop-\(cpu).png"))
+                    let safe = label.replacingOccurrences(of: " ", with: "")
+                    try? data.write(to: URL(fileURLWithPath: dir + "/status-desktop-\(safe).png"))
                 }
-                print("[status] desktop-\(cpu) size=\(sz)")
+                print("[status] desktop-\(label) size=\(sz)")
             }
             return
         }
@@ -756,6 +763,11 @@ if let si = CommandLine.arguments.firstIndex(of: "--statusbar"), si + 1 < Comman
         app.appearance = NSAppearance(named: .aqua)
     }
     StatusBarRender.run(dir: CommandLine.arguments[si + 1])
+    exit(0)
+}
+if CommandLine.arguments.contains("--smc-probe") {
+    // 台式机上跑一次，就知道 SMC 有没有可用的功率键
+    for line in SMCPower.probe() { print(line) }
     exit(0)
 }
 if CommandLine.arguments.contains("--export") {
