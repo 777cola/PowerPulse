@@ -400,16 +400,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusTitle() {
         guard let button = statusItem.button else { return }
-        // 台式机没有电池：别写 0%，只留一个插头图标
+        // 台式机没有电池：插座图标 + CPU 占用（整机瓦数在台式机上读不到）
         if !snapshot.hasBattery {
-            guard lastTitleKey != "nobattery" else { return }
-            lastTitleKey = "nobattery"
-            button.attributedTitle = NSAttributedString(string: "")
-            button.image = NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "PowerPulse")
-            button.image?.isTemplate = true
-            statusItem.button?.toolTip = S.noBattery.v(Settings.shared.lang)
+            let cpu = Int(stats.cpu.rounded())
+            let key = "nobattery|\(cpu)"
+            guard key != lastTitleKey else { return }
+            lastTitleKey = key
+            if button.image == nil || button.image?.accessibilityDescription != "PowerPulse" {
+                button.image = NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "PowerPulse")
+                button.image?.isTemplate = true
+            }
+            button.attributedTitle = NSAttributedString(
+                string: " \(cpu)%",
+                attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
+                             .foregroundColor: NSColor.labelColor])
+            button.toolTip = S.noBattery.v(Settings.shared.lang) + " · " + S.cpuLoad.v(Settings.shared.lang)
             return
         }
+        // 有电池：先把插头图标摘掉，否则会和电池图标并排出现
+        if button.image != nil { button.image = nil }
         let percent = snapshot.percent
         let watts = snapshot.isPluggedIn ? snapshot.wallW : snapshot.systemUsageW
         let key = "\(percent)|\(Int(watts.rounded()))|\(snapshot.isCharging)|\(Settings.shared.menuBar.rawValue)"
@@ -659,6 +668,42 @@ extension PopoverController {
 
 enum StatusBarRender {
     static func run(dir: String) {
+        // 台式机：插座 + CPU%，电池机：电池图标 + 百分比
+        if CommandLine.arguments.contains("--nobattery") {
+            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            for cpu in [7, 38, 86] {
+                // 渲染到纯位图时没有系统着色，template 图会黑底黑图，得自己上色
+                let plug = Icon.tinted("powerplug.fill", color: .labelColor, size: 13)
+                let t = NSMutableAttributedString()
+                if let plug {
+                    let att = NSTextAttachment()
+                    att.image = plug
+                    t.append(NSAttributedString(attachment: att))
+                }
+                t.append(NSAttributedString(string: "\(cpu)%", attributes: [
+                    .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
+                    .foregroundColor: NSColor.labelColor]))
+                let sz = t.size()
+                let W = Int(ceil(sz.width)) + 12, H = 22
+                guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: W * 2, pixelsHigh: H * 2,
+                                                 bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                                 isPlanar: false, colorSpaceName: .deviceRGB,
+                                                 bytesPerRow: 0, bitsPerPixel: 0) else { continue }
+                rep.size = NSSize(width: W, height: H)
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+                if !CommandLine.arguments.contains("--alpha") {
+                    NSColor.black.setFill(); NSRect(x: 0, y: 0, width: W, height: H).fill()
+                }
+                t.draw(at: NSPoint(x: 6, y: (CGFloat(H) - sz.height) / 2 + 1))
+                NSGraphicsContext.restoreGraphicsState()
+                if let data = rep.representation(using: .png, properties: [:]) {
+                    try? data.write(to: URL(fileURLWithPath: dir + "/status-desktop-\(cpu).png"))
+                }
+                print("[status] desktop-\(cpu) size=\(sz)")
+            }
+            return
+        }
         let cases: [(String, Int, Double, Bool, Bool)] = [
             ("87-52w", 87, 52, true, true),
             ("45-12w", 45, 12, true, true),

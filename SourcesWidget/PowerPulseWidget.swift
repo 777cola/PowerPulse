@@ -39,7 +39,11 @@ struct WidgetView: View {
 
     private var s: WidgetSnapshot { entry.snap }
 
+    /// 台式机没有电池，任何 0% 都是假的
+    private var percentText: String { s.hasBattery ? "\(s.percent)" : "—" }
+
     private var accent: Color {
+        if !s.hasBattery { return .blue }
         if s.charging { return .green }
         if s.plugged { return .purple }
         return s.percent <= 20 ? .red : .primary
@@ -67,7 +71,7 @@ struct WidgetView: View {
             }
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline, spacing: 1) {
-                Text("\(s.percent)")
+                Text(percentText)
                     .font(.system(size: 40, weight: .light, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(.primary)
@@ -106,7 +110,7 @@ struct WidgetView: View {
                     .foregroundStyle(.secondary)
             }
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(s.percent)")
+                Text(percentText)
                     .font(.system(size: 34, weight: .light, design: .rounded))
                     .monospacedDigit()
                 Text("%")
@@ -122,17 +126,19 @@ struct WidgetView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            // 电量条
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.primary.opacity(0.09))
-                    Capsule().fill(accent.opacity(0.75))
-                        .frame(width: max(geo.size.width * CGFloat(min(max(s.percent, 0), 100)) / 100, 4))
+            // 电量条（台式机没有）
+            if s.hasBattery {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.primary.opacity(0.09))
+                        Capsule().fill(accent.opacity(0.75))
+                            .frame(width: max(geo.size.width * CGFloat(min(max(s.percent, 0), 100)) / 100, 4))
+                    }
                 }
+                .frame(height: 6)
             }
-            .frame(height: 6)
             HStack(spacing: 4) {
-                Text(s.charging ? "电池 \(String(format: "%.1f", s.batteryW)) W 充入 · \(remainText)" : "电池放电 \(String(format: "%.1f", s.batteryW)) W · \(remainText)")
+                Text(s.hasBattery ? (s.charging ? "电池 \(String(format: "%.1f", s.batteryW)) W 充入 · \(remainText)" : "电池放电 \(String(format: "%.1f", s.batteryW)) W · \(remainText)") : "插电直供 · 无电池")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                 Spacer()

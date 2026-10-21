@@ -8,6 +8,7 @@ enum WidgetBridge {
 
     static func push(_ s: PowerSnapshot, _ a: AdapterInfo?) {
         var w = WidgetSnapshot()
+        w.hasBattery = s.hasBattery
         w.percent = s.percent
         w.charging = s.isCharging
         w.plugged = s.isPluggedIn

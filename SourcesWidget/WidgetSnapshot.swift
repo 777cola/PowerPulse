@@ -3,6 +3,7 @@ import Foundation
 /// 主 app 与小组件之间共享的快照（JSON，落在 Application Support/PowerPulse/widget.json）
 struct WidgetSnapshot: Codable {
     var percent: Int = 0
+    var hasBattery = true          // 台式机 false：小组件不能写 0%
     var charging = false
     var plugged = false
     var wallW: Double = 0
@@ -68,6 +69,7 @@ struct WidgetSnapshot: Codable {
 
     // 徽标/文案
     var symbolName: String {
+        if !hasBattery { return "powerplug.fill" }
         if charging { return "battery.100.bolt" }
         if percent <= 20 { return "battery.25" }
         if percent <= 50 { return "battery.50" }
@@ -76,6 +78,7 @@ struct WidgetSnapshot: Codable {
     }
 
     var stateText: String {
+        if !hasBattery { return "插电直供" }
         if charging { return "充电中" }
         if plugged { return percent >= 99 ? "已充满" : "外接电源" }
         return "放电中"
