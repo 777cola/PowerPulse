@@ -3,6 +3,14 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import pathlib
 
+def app_version() -> str:
+    """版本号只认 build_app.sh 里那一处，别到处抄。"""
+    import re, pathlib
+    src = (pathlib.Path(__file__).resolve().parent.parent / "build_app.sh").read_text(encoding="utf-8")
+    m = re.search(r'VERSION="\$\{VERSION:-([^}]+)\}', src)
+    return m.group(1) if m else "0.0.0"
+
+
 DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 W, H = 1200, 630
 PAPER = (245, 248, 252)
@@ -44,7 +52,7 @@ for y in range(0, H, 60):
 icon = Image.open(DOCS / "img" / "appicon.png").convert("RGBA").resize((46, 46), Image.LANCZOS)
 img.paste(icon, (72, 64), icon)
 d.text((132, 74), "PowerPulse", font=font(27, True), fill=INK)
-d.text((132, 108), "macOS 菜单栏电源监控 · 2.0.0", font=font(15), fill=MUTED)
+d.text((132, 108), f"macOS 菜单栏电源监控 · {app_version()}", font=font(15), fill=MUTED)
 
 d.text((72, 196), "菜单栏里，", font=font(58, True), fill=INK)
 d.text((72, 268), "看清每一瓦。", font=font(58, True), fill=BLUE)
