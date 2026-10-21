@@ -212,6 +212,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         Sampler.shared.onSample = { [weak self] s, a in
             guard let self else { return }
+            self.hasSampled = true
             self.snapshot = s
             self.adapter = a
             self.onTick()
@@ -358,6 +359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func quit() { NSApp.terminate(nil) }
 
     private var lastTitleKey = ""
+    private var hasSampled = false
 
     /// 菜单栏标题的组装单独拆出来：状态栏和自检渲染共用同一份代码，
     /// 否则"渲染出来对、真机不对"这种问题永远测不出来。
@@ -400,6 +402,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusTitle() {
         guard let button = statusItem.button else { return }
+        // 第一帧采样之前 snapshot 是默认值（hasBattery=false、percent=0），
+        // 这时候照着它画会出现「插头闪一下」或「0%」，宁可不画
+        guard hasSampled else { return }
         // 台式机没有电池：插座图标 + CPU 占用（整机瓦数在台式机上读不到）
         if !snapshot.hasBattery {
             let cpu = Int(stats.cpu.rounded())

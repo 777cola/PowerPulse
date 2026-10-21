@@ -417,6 +417,7 @@ extension PowerSnapshot {
     /// 构造一份"插着 60W 充电器、正在充电"的快照，用来在没插电的机器上检查双带布局
     static func demoPlugged() -> PowerSnapshot {
         var d = PowerSnapshot()
+        d.hasBattery = true          // 演示数据是笔记本状态，别让自检掉进台式机分支
         d.isPluggedIn = true
         d.isCharging = true
         d.percent = 87

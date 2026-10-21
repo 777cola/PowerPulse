@@ -138,7 +138,10 @@ final class FlowView: NSView {
             bodyImage = renderBody()
             bodyKey = key
         }
-        bodyImage?.draw(in: bounds, from: .zero, operation: .sourceOver, fraction: 1,
+        // 位图贴回时不能做插值：视图高度常常是 132.5 这种半像素，
+        // 一重采样，胶囊里 13pt 的 8 就会糊成 3（真发生过）。
+        NSGraphicsContext.current?.imageInterpolation = .none
+        bodyImage?.draw(in: bounds.integral, from: .zero, operation: .sourceOver, fraction: 1,
                         respectFlipped: true, hints: nil)
 
         drawMotion()
@@ -227,8 +230,11 @@ final class FlowView: NSView {
         drawCapsule("\(String(format: "%.1f", sysW)) W", centerY: sysY, bandHeight: bands[0].height, color: D.blue)
 
         let tail: String
-        if charging {
+        if charging && snapshot.percent < 100 && snapshot.timeToFull > 0 {
             tail = "\(S.toFull.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToFull))"
+        } else if charging && snapshot.percent >= 100 {
+            // 已经 100% 了还写"预计充满 44 分钟"就是自相矛盾
+            tail = S.full.v(Settings.shared.lang)
         } else if snapshot.percent >= 99 {
             tail = S.full.v(Settings.shared.lang)
         } else {
