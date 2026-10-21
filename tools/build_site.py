@@ -303,7 +303,7 @@ ZH = dict(
         ("w3 tint", "一秒一次", "采样、菜单栏、小组件同一节拍。插拔电源立刻响应，不用等下一个刷新周期。", "tick", "1 s"),
         ("w3", "充电器体检", "读得到协商电压电流、PD 档位表、厂商与型号。跑不满时给结论，不给原始码。", "pills", None),
         ("w2", "电池健康", "循环次数、实际满容量、设计容量、当前温度。", "bar", "92.9%"),
-        ("w2", "30 天历史", "SQLite + WAL，每 2 秒一条，定期合并日志。", None, None),
+        ("w2", "30 天历史", "SQLite + WAL，按采样间隔逐条记录，定期合并日志。", None, None),
         ("w2", "桌面小组件", "不打开面板也能看到当前功率与电量。", None, None),
     ],
     s_title="数据从哪来",
@@ -312,7 +312,7 @@ ZH = dict(
     rows=[("电源与电池", "IOKit 的 <code>AppleSmartBattery</code>：瞬时功率、电压电流、循环次数、温度"),
           ("充电器", "<code>AdapterDetails</code> 与 <code>UsbHvcMenu</code>：协商档位、PD 能力表、厂商型号"),
           ("进程能耗", "<code>rusage_info_v6</code> 的 <code>ri_energy_nj</code> 差分，不需要 root"),
-          ("历史", "SQLite + WAL，每 2 秒一条，启动时合并日志"),
+          ("历史", "SQLite + WAL，按采样间隔逐条记录，启动时合并日志"),
           ("界面", "纯 AppKit 手绘，玻璃弹窗和功率流都是 <code>draw(_:)</code> 画的"),
           ("小组件", "WidgetKit，通过 App Group 读主程序写下的快照")],
     perf_title="它自己也得省电",
@@ -322,7 +322,7 @@ ZH = dict(
     d_title="装上，就一直在菜单栏里",
     d_sub="免安装器，拖进「应用程序」即可。没有 Apple 公证，首次打开会被系统拦一次。",
     d_btn=f"下载 {SITE_VER}", d_src="从源码构建",
-    d_note="ad-hoc 签名、未公证：首次打开若被拦，去「系统设置 → 隐私与安全性 → 仍要打开」。",
+    d_note="笔记本看电池与充电；台式机（Mac Studio / mini / Pro）没有电池，只能看系统负载。\nad-hoc 签名、未公证：首次打开若被拦，去「系统设置 → 隐私与安全性 → 仍要打开」。",
     d_cmd_label="或一行装好，终端下载不带隔离标记，不会弹窗：",
     d_cmd='curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash',
     d_meta=[f"v{SITE_VER}", ".zip", f"{ZIP_KB} KB", "macOS 14.0+", "Apple Silicon", "MIT"],
@@ -388,7 +388,7 @@ EN = dict(
     d_title="Install once, live in the menu bar",
     d_sub="No installer — drag it into Applications. The build isn't notarized, so the first launch is blocked once.",
     d_btn=f"Download {SITE_VER}", d_src="Build from source",
-    d_note="Ad-hoc signed, not notarized: if Gatekeeper blocks the first launch, allow it in System Settings → Privacy & Security.",
+    d_note="Laptops get battery and charging; desktops (Mac Studio / mini / Pro) have no battery, so only system load.\nAd-hoc signed, not notarized: if Gatekeeper blocks the first launch, allow it in System Settings → Privacy & Security.",
     d_cmd_label="Or install with one line — Terminal downloads carry no quarantine flag, so nothing pops up:",
     d_cmd='curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash',
     d_meta=[f"v{SITE_VER}", ".zip", f"{ZIP_KB} KB", "macOS 14.0+", "Apple Silicon", "MIT"],
@@ -537,7 +537,7 @@ def render(c, prefix, other_href, shot_suffix=""):
 <section class="sec" id="download"><div class="wrap">
   <div class="dl">
     <img src="{prefix}img/appicon.png" alt="PowerPulse icon">
-    <div><h2>{c['d_title']}</h2><p>{c['d_sub']}</p><div class="meta">{meta}</div><p class="dl-note">{c['d_note']}</p>
+    <div><h2>{c['d_title']}</h2><p>{c['d_sub']}</p><div class="meta">{meta}</div><p class="dl-note">{c['d_note'].replace(chr(10), '<br>')}</p>
       <div class="dl-cmd"><span>{c['d_cmd_label']}</span><code>{c['d_cmd']}</code></div></div>
     <div class="dl-cta">
       <a class="btn btn-primary" href="{RELEASE}">{c['d_btn']}</a>

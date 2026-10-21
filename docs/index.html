@@ -369,13 +369,13 @@ pre .c{color:#7f93ad}
 
 <section class="sec" id="features"><div class="wrap">
   <div class="sec-head"><span class="num">03</span><div><h2>该有的都有，多的一个不放。</h2><p>没有账号、没有云同步、没有「猜你喜欢」。数据全部留在本机。</p></div></div>
-  <div class="bento"><div class="cell w3 tint"><h3>一秒一次</h3><p>采样、菜单栏、小组件同一节拍。插拔电源立刻响应，不用等下一个刷新周期。</p><div class="tick"><b>1 s</b><span>·</span><span>sampling clock</span></div></div><div class="cell w3"><h3>充电器体检</h3><p>读得到协商电压电流、PD 档位表、厂商与型号。跑不满时给结论，不给原始码。</p><div class="pill-row"><span class="pill">5V · 3A</span><span class="pill">9V · 3A</span><span class="pill">12V · 3A</span><span class="pill">15V · 3A</span><span class="pill now">20V · 3A</span></div></div><div class="cell w2"><h3>电池健康</h3><p>循环次数、实际满容量、设计容量、当前温度。</p><div class="bar"><i></i></div><div class="tick"><b>92.9%</b><span>·</span><span>design capacity</span></div></div><div class="cell w2"><h3>30 天历史</h3><p>SQLite + WAL，每 2 秒一条，定期合并日志。</p></div><div class="cell w2"><h3>桌面小组件</h3><p>不打开面板也能看到当前功率与电量。</p></div></div>
+  <div class="bento"><div class="cell w3 tint"><h3>一秒一次</h3><p>采样、菜单栏、小组件同一节拍。插拔电源立刻响应，不用等下一个刷新周期。</p><div class="tick"><b>1 s</b><span>·</span><span>sampling clock</span></div></div><div class="cell w3"><h3>充电器体检</h3><p>读得到协商电压电流、PD 档位表、厂商与型号。跑不满时给结论，不给原始码。</p><div class="pill-row"><span class="pill">5V · 3A</span><span class="pill">9V · 3A</span><span class="pill">12V · 3A</span><span class="pill">15V · 3A</span><span class="pill now">20V · 3A</span></div></div><div class="cell w2"><h3>电池健康</h3><p>循环次数、实际满容量、设计容量、当前温度。</p><div class="bar"><i></i></div><div class="tick"><b>92.9%</b><span>·</span><span>design capacity</span></div></div><div class="cell w2"><h3>30 天历史</h3><p>SQLite + WAL，按采样间隔逐条记录，定期合并日志。</p></div><div class="cell w2"><h3>桌面小组件</h3><p>不打开面板也能看到当前功率与电量。</p></div></div>
 </div></section>
 
 <section class="sec" id="specs"><div class="wrap">
   <div class="sec-head"><span class="num">04</span><div><h2>数据从哪来</h2><p>不猜、不估算，全部读系统自己的寄存器。</p></div></div>
   <div class="specs">
-    <div class="rows-wrap"><div class="rows-head"><span>模块</span><span>怎么读到的</span></div><dl class="rows"><div><dt>电源与电池</dt><dd>IOKit 的 <code>AppleSmartBattery</code>：瞬时功率、电压电流、循环次数、温度</dd></div><div><dt>充电器</dt><dd><code>AdapterDetails</code> 与 <code>UsbHvcMenu</code>：协商档位、PD 能力表、厂商型号</dd></div><div><dt>进程能耗</dt><dd><code>rusage_info_v6</code> 的 <code>ri_energy_nj</code> 差分，不需要 root</dd></div><div><dt>历史</dt><dd>SQLite + WAL，每 2 秒一条，启动时合并日志</dd></div><div><dt>界面</dt><dd>纯 AppKit 手绘，玻璃弹窗和功率流都是 <code>draw(_:)</code> 画的</dd></div><div><dt>小组件</dt><dd>WidgetKit，通过 App Group 读主程序写下的快照</dd></div></dl></div>
+    <div class="rows-wrap"><div class="rows-head"><span>模块</span><span>怎么读到的</span></div><dl class="rows"><div><dt>电源与电池</dt><dd>IOKit 的 <code>AppleSmartBattery</code>：瞬时功率、电压电流、循环次数、温度</dd></div><div><dt>充电器</dt><dd><code>AdapterDetails</code> 与 <code>UsbHvcMenu</code>：协商档位、PD 能力表、厂商型号</dd></div><div><dt>进程能耗</dt><dd><code>rusage_info_v6</code> 的 <code>ri_energy_nj</code> 差分，不需要 root</dd></div><div><dt>历史</dt><dd>SQLite + WAL，按采样间隔逐条记录，启动时合并日志</dd></div><div><dt>界面</dt><dd>纯 AppKit 手绘，玻璃弹窗和功率流都是 <code>draw(_:)</code> 画的</dd></div><div><dt>小组件</dt><dd>WidgetKit，通过 App Group 读主程序写下的快照</dd></div></dl></div>
     <div class="side">
       <h3>它自己也得省电</h3>
       <dl><div><dt>空闲 CPU</dt><dd>0.4%</dd></div><div><dt>内存</dt><dd>21 MB</dd></div><div><dt>展开功率流</dt><dd>6%</dd></div><div><dt>采样</dt><dd>1 s</dd></div></dl>
@@ -387,7 +387,7 @@ pre .c{color:#7f93ad}
 <section class="sec" id="download"><div class="wrap">
   <div class="dl">
     <img src="img/appicon.png" alt="PowerPulse icon">
-    <div><h2>装上，就一直在菜单栏里</h2><p>免安装器，拖进「应用程序」即可。没有 Apple 公证，首次打开会被系统拦一次。</p><div class="meta"><span>v2.1.0</span><span>.zip</span><span>658 KB</span><span>macOS 14.0+</span><span>Apple Silicon</span><span>MIT</span></div><p class="dl-note">ad-hoc 签名、未公证：首次打开若被拦，去「系统设置 → 隐私与安全性 → 仍要打开」。</p>
+    <div><h2>装上，就一直在菜单栏里</h2><p>免安装器，拖进「应用程序」即可。没有 Apple 公证，首次打开会被系统拦一次。</p><div class="meta"><span>v2.1.0</span><span>.zip</span><span>658 KB</span><span>macOS 14.0+</span><span>Apple Silicon</span><span>MIT</span></div><p class="dl-note">笔记本看电池与充电；台式机（Mac Studio / mini / Pro）没有电池，只能看系统负载。<br>ad-hoc 签名、未公证：首次打开若被拦，去「系统设置 → 隐私与安全性 → 仍要打开」。</p>
       <div class="dl-cmd"><span>或一行装好，终端下载不带隔离标记，不会弹窗：</span><code>curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash</code></div></div>
     <div class="dl-cta">
       <a class="btn btn-primary" href="https://github.com/777cola/PowerPulse/releases/latest">下载 2.1.0</a>
