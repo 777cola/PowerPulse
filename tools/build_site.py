@@ -6,6 +6,10 @@
 """
 import io, os, pathlib
 
+# 版本与包体积只在这里改一处
+SITE_VER = "2.1.0"
+ZIP_KB = "658"
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 
@@ -267,7 +271,7 @@ ZH = dict(
     code="zh", other="en", other_label="EN", home="index.html",
     nav=[("panels", "面板"), ("anatomy", "解剖图"), ("features", "特性"), ("specs", "实现")],
     cta="下载",
-    eyebrow="macOS 菜单栏工具 · 2.0.0",
+    eyebrow=f"macOS 菜单栏工具 · {SITE_VER}",
     h1=("菜单栏里，", "看清每一瓦。"),
     sub="每秒采样一次，把墙插输出、系统功耗、电池充电功率拆开显示。插上充电器那一刻，就知道这套充电套装到底跑了多少。",
     cta1="下载 macOS 版", cta2="查看源码",
@@ -317,11 +321,11 @@ ZH = dict(
     build_cmd='<span class="c"># 需要 macOS 14+ 与命令行工具</span>\ngit clone https://github.com/777cola/PowerPulse.git\ncd PowerPulse &amp;&amp; ./build_app.sh\n<span class="c"># 产出 PowerPulse.app 与小组件</span>',
     d_title="装上，就一直在菜单栏里",
     d_sub="免安装器，拖进「应用程序」即可。没有 Apple 公证，首次打开会被系统拦一次。",
-    d_btn="下载 2.0.0", d_src="从源码构建",
+    d_btn=f"下载 {SITE_VER}", d_src="从源码构建",
     d_note="ad-hoc 签名、未公证：首次打开若被拦，去「系统设置 → 隐私与安全性 → 仍要打开」。",
     d_cmd_label="或一行装好，终端下载不带隔离标记，不会弹窗：",
     d_cmd='curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash',
-    d_meta=["v2.0.0", ".zip", "649 KB", "macOS 14.0+", "Apple Silicon", "MIT"],
+    d_meta=[f"v{SITE_VER}", ".zip", f"{ZIP_KB} KB", "macOS 14.0+", "Apple Silicon", "MIT"],
     foot="© 2026 AutumnPants · PowerPulse",
     foot_links=[("https://github.com/777cola/PowerPulse", "GitHub"),
                 ("https://github.com/777cola/PowerPulse/issues", "反馈"),
@@ -333,7 +337,7 @@ EN = dict(
     code="en", other="", other_label="中文", home="../index.html",
     nav=[("panels", "Panels"), ("anatomy", "Anatomy"), ("features", "Features"), ("specs", "Inside")],
     cta="Download",
-    eyebrow="macOS menu bar utility · 2.0.0",
+    eyebrow=f"macOS menu bar utility · {SITE_VER}",
     h1=("Every watt,", "right in the menu bar."),
     sub="One sample per second. Wall power, system draw and charge power, as three values that must add up — so you can tell what your charger is actually delivering.",
     cta1="Download for macOS", cta2="View source",
@@ -383,11 +387,11 @@ EN = dict(
     build_cmd='<span class="c"># needs macOS 14+ and the command line tools</span>\ngit clone https://github.com/777cola/PowerPulse.git\ncd PowerPulse &amp;&amp; ./build_app.sh\n<span class="c"># produces PowerPulse.app and the widget</span>',
     d_title="Install once, live in the menu bar",
     d_sub="No installer — drag it into Applications. The build isn't notarized, so the first launch is blocked once.",
-    d_btn="Download 2.0.0", d_src="Build from source",
+    d_btn=f"Download {SITE_VER}", d_src="Build from source",
     d_note="Ad-hoc signed, not notarized: if Gatekeeper blocks the first launch, allow it in System Settings → Privacy & Security.",
     d_cmd_label="Or install with one line — Terminal downloads carry no quarantine flag, so nothing pops up:",
     d_cmd='curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash',
-    d_meta=["v2.0.0", ".zip", "649 KB", "macOS 14.0+", "Apple Silicon", "MIT"],
+    d_meta=[f"v{SITE_VER}", ".zip", f"{ZIP_KB} KB", "macOS 14.0+", "Apple Silicon", "MIT"],
     foot="© 2026 AutumnPants · PowerPulse",
     foot_links=[("https://github.com/777cola/PowerPulse", "GitHub"),
                 ("https://github.com/777cola/PowerPulse/issues", "Issues"),
