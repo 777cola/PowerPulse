@@ -177,6 +177,7 @@ SourcesWidget/
 
 - **iPhone 电池**：需要 `libimobiledevice`，当前版本没做
 - **线材 e-marker**：macOS 不暴露，只能推断
+- **台式机（Mac Studio / mini / Pro）**：没有 `AppleSmartBattery`，墙插和电池功率都读不到。功率流面板会直接说明，系统监控的曲线自动改成 CPU 占用
 - **Intel Mac**：当前二进制是 arm64，Intel 机器跑不了（改 `build_app.sh` 里的 `-target` 自行编译）
 - **未公证**：见上文，需要付费开发者账号
 
@@ -299,6 +300,7 @@ The self-test renders every panel in every language offscreen and audits the lay
 
 - iPhone battery readout needs `libimobiledevice` — not in this version
 - Cable e-marker is invisible to macOS
+- Desktops (Mac Studio / mini / Pro) have no `AppleSmartBattery`, so wall and battery wattage are unavailable; the Power Flow panel says so and the curve switches to CPU load
 - Intel Macs: the shipped binary is arm64 only; rebuild with `-target x86_64-apple-macos14.0`
 - Not notarized — see above
 

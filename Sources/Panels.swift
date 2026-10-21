@@ -95,6 +95,17 @@ final class NowPanel: Panel {
 
     override func refresh(power s: PowerSnapshot, adapter a: AdapterInfo?, stats: SystemStats, energy: [ProcessEnergy]) {
         flow.update(s, a)
+
+        // 台式机（Mac Studio / mini / Pro）：没有电池，四张卡都不能写 0 / 放电中
+        if !s.hasBattery {
+            wallCard.update(value: "—");  wallCard.setDimmed(true)
+            sysCard.update(value: "—")
+            batCard.update(title: S.batteryOut.v(lang), value: "—", valueColor: D.tertiary)
+            stateCard.update(title: S.battery.v(lang), value: "—", valueColor: D.tertiary)
+            adapterBox.isHidden = true
+            return
+        }
+
         wallCard.update(value: s.isPluggedIn ? String(format: "%.1f W", s.wallW) : "—")
         wallCard.setDimmed(!s.isPluggedIn)
         sysCard.update(value: String(format: "%.1f W", s.systemUsageW))
@@ -131,6 +142,7 @@ final class MonitorPanel: Panel {
     private let memRow = KVRow(S.mem.v(Settings.shared.lang), symbol: "memorychip", value: "—")
     private let cpuBar = LevelBar(), gpuBar = LevelBar(), memBar = LevelBar()
     private let chart = LineChartView()
+    private let curveTitle = SectionTitle("", symbol: "waveform.path.ecg")
     private let energyStack = NSStackView()
     private var energyRows: [KVRow] = []
     /// 缓冲按"保留 5 分钟"给容量，而不是写死点数：
@@ -196,7 +208,7 @@ final class MonitorPanel: Panel {
         let root = vstack([
             SectionTitle(S.cpuLoad.v(lang), symbol: "gauge.medium"),
             gauges,
-            SectionTitle(S.powerCurve.v(lang), symbol: "waveform.path.ecg"),
+            curveTitle,
             chart,
             SectionTitle(S.energyTitle.v(lang), symbol: "bolt.batteryblock"),
             energyStack,
@@ -226,7 +238,11 @@ final class MonitorPanel: Panel {
         gpuBar.ratio = CGFloat(stats.gpu / 100)
         memBar.ratio = CGFloat(stats.memPercent / 100)
 
-        liveBuffer.append(power.systemUsageW)
+        // 台式机读不到 SystemPowerIn，曲线改画 CPU 占用，否则永远是一条 0W 的平线
+        let showCPU = !power.hasBattery
+        curveTitle.set((showCPU ? S.cpuCurve : S.powerCurve).v(lang))
+        chart.unit = showCPU ? "%" : "W"
+        liveBuffer.append(showCPU ? stats.cpu : power.systemUsageW)
         chart.set(liveBuffer.array)
         updateTimeTicks()
 

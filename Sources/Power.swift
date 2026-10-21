@@ -13,6 +13,7 @@ struct PowerSnapshot {
     var isCharging = false
     var isPluggedIn = false
     var percent = 0
+    var hasBattery = false          // 台式机（Mac Studio / mini / Pro）没有 AppleSmartBattery
     var currentCapacity = 0        // mAh
     var fullCapacity = 0
     var designCapacity = 0
@@ -163,6 +164,7 @@ final class Sampler {
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
         guard service != IO_OBJECT_NULL else { return (snap, nil) }
         defer { IOObjectRelease(service) }
+        snap.hasBattery = true
 
         var props: Unmanaged<CFMutableDictionary>?
         guard IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,

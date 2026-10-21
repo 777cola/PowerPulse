@@ -400,6 +400,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusTitle() {
         guard let button = statusItem.button else { return }
+        // 台式机没有电池：别写 0%，只留一个插头图标
+        if !snapshot.hasBattery {
+            guard lastTitleKey != "nobattery" else { return }
+            lastTitleKey = "nobattery"
+            button.attributedTitle = NSAttributedString(string: "")
+            button.image = NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "PowerPulse")
+            button.image?.isTemplate = true
+            statusItem.button?.toolTip = S.noBattery.v(Settings.shared.lang)
+            return
+        }
         let percent = snapshot.percent
         let watts = snapshot.isPluggedIn ? snapshot.wallW : snapshot.systemUsageW
         let key = "\(percent)|\(Int(watts.rounded()))|\(snapshot.isCharging)|\(Settings.shared.menuBar.rawValue)"
@@ -568,6 +578,11 @@ extension PopoverController {
         if CommandLine.arguments.contains("--plugged") {
             power = .demoPlugged()
             adapter = .demoAdapter()
+        }
+        if CommandLine.arguments.contains("--nobattery") {
+            power = PowerSnapshot()      // 台式机：全零
+            power.hasBattery = false
+            adapter = nil
         }
         let stats = Sampler.shared.systemOnce()
         let probe = ProbeEnergy()

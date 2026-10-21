@@ -37,6 +37,29 @@ final class FlowView: NSView {
     override var isFlipped: Bool { true }
     override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: 160) }
 
+    /// 台式机：没有电池，没有墙插 / 电池功率，只说明现状
+    private func drawNoBatteryBody() {
+        let lang = Settings.shared.lang
+        let title = S.noBattery.v(lang)
+        let sub = S.mainsOnly.v(lang)
+
+        let f1 = D.text(13, .medium)
+        let f2 = D.text(10)
+        let s1 = title.size(f1)
+        let s2 = sub.size(f2)
+        let gap: CGFloat = 6
+        let total = s1.height + gap + s2.height
+        let top = (bounds.height - total) / 2
+
+        if let img = Icon.tinted("desktopcomputer", color: D.tertiary, size: 30) {
+            img.draw(in: NSRect(x: (bounds.midX - 15).rounded(), y: top - 36, width: 30, height: 30))
+        }
+        title.draw(at: NSPoint(x: (bounds.midX - s1.width / 2).rounded(), y: top.rounded()),
+                   withAttributes: [.font: f1, .foregroundColor: D.secondary])
+        sub.draw(at: NSPoint(x: (bounds.midX - s2.width / 2).rounded(), y: (top + s1.height + gap).rounded()),
+                 withAttributes: [.font: f2, .foregroundColor: D.tertiary])
+    }
+
     // MARK: - 动画
 
     func startAnimating() {
@@ -100,6 +123,10 @@ final class FlowView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         guard bounds.width > 120, bounds.height > 40 else { return }
+        if !snapshot.hasBattery {
+            drawNoBatteryBody()
+            return
+        }
         computeGeometry()
         if renderingCache {           // 正在抓缓存：只画静态层
             if snapshot.isPluggedIn { drawPluggedBody() } else { drawBatteryOnlyBody() }
