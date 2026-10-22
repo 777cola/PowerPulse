@@ -272,10 +272,19 @@ final class FlowView: NSView {
 
         for b in bands { drawBandBody(b) }
 
-        // 汇流条：两根带子在右边并成一路，再接系统
-        let bus = NSRect(x: endX + 1, y: top, width: 5, height: blockH)
-        D.blue.withAlphaComponent(0.5).setFill()
-        NSBezierPath(roundedRect: bus, xRadius: 2.5, yRadius: 2.5).fill()
+        // 汇流：两根带子各画一条弧线收进系统节点，比直角的 T 形接线顺眼
+        let nodeLeft = bounds.width - nodeW
+        D.blue.withAlphaComponent(0.5).setStroke()
+        for band in bands {
+            let merge = NSBezierPath()
+            merge.lineWidth = 3
+            merge.lineCapStyle = .round
+            merge.move(to: NSPoint(x: endX - 3, y: band.centerY))
+            merge.curve(to: NSPoint(x: nodeLeft + 3, y: midY),
+                        controlPoint1: NSPoint(x: endX + 10, y: band.centerY),
+                        controlPoint2: NSPoint(x: nodeLeft - 8, y: midY))
+            merge.stroke()
+        }
 
         drawNode(x: 0, centerY: wallBand.centerY, height: max(wallBand.height, 46),
                  symbol: "powerplug.fill", value: String(format: "%.1f W", snapshot.wallW), color: D.purple)

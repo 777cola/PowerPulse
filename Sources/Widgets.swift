@@ -135,6 +135,20 @@ final class MetricCard: NSView {
     }
     required init?(coder: NSCoder) { fatalError() }
 
+    override func layout() {
+        super.layout()
+        // 卡片窄、文案长（英文/繁中）时缩一点字号，比截成 "Battery as…" 好看
+        let available = bounds.width - 10
+        guard available > 20 else { return }
+        var size: CGFloat = 13.5
+        while size > 9.5, valueLabel.stringValue.size(D.rounded(size)).width > available {
+            size -= 0.5
+        }
+        if abs((valueLabel.font?.pointSize ?? 0) - size) > 0.01 {
+            valueLabel.font = D.rounded(size)
+        }
+    }
+
     /// 没数据时整张卡"熄灯"，别让灰色占位看起来像激活的模块
     func setDimmed(_ dim: Bool) {
         iconView?.alphaValue = dim ? 0.4 : 1

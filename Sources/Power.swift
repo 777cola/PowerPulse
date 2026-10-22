@@ -46,7 +46,7 @@ struct PowerSnapshot {
     }
     var statusTextKey: Tri {
         if isCharging { return S.charging }
-        if flowMode == .supplementing { return S.supplement }
+        if flowMode == .supplementing { return S.supplementShort }
         if isPluggedIn { return percent >= 99 ? S.full : S.plugged }
         return S.discharging
     }
@@ -81,6 +81,12 @@ struct AdapterInfo {
     func verdict(snap: PowerSnapshot) -> (text: String, level: Int) {
         // level: 0 正常 1 提示 2 警告
         if isWireless { return (S.wirelessCharging.v(Settings.shared.lang), 1) }
+        // 插着电却还在放电：结论只能是"充电器带不动"，不是"快充满了"
+        if snap.flowMode == .supplementing {
+            // 用电池实际出力，别用"系统 - 墙插"倒算：两者差 0.1 就对不上图里的数字
+            let missing = max(snap.batteryW, 0)
+            return (String(format: S.vShort.v(Settings.shared.lang), missing), 2)
+        }
         if snap.thermallyLimited != 0 || snap.temperature >= 42 {
             return (S.vThermal.v(Settings.shared.lang), 2)
         }

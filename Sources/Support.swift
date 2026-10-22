@@ -49,6 +49,7 @@ enum S {
     static let remaining = Tri("预计可用", "預計可用", "Time left")
     static let toFull = Tri("预计充满", "預計充滿", "To full")
     static let supplement = Tri("电池在补充", "電池在補充", "Battery assisting")
+    static let supplementShort = Tri("电池补充", "電池補充", "Assist")
     static let calculating = Tri("计算中", "計算中", "—")
 
     static let adapterTitle = Tri("充电器", "充電器", "Charger")
@@ -68,6 +69,7 @@ enum S {
     static let vSlow = Tri("充电速度受限，可能是线材或充电头档位不够", "充電速度受限，可能是線材或充電頭檔位不夠", "Charging speed limited — cable or adapter tier")
     static let vTaper = Tri("后段充电，功率会逐步下降，属正常", "後段充電，功率會逐步下降，屬正常", "Late-stage charging — power tapers off by design")
     static let vFull = Tri("接近充满，功率自然降低", "接近充滿，功率自然降低", "Nearly full — power tapers off")
+    static let vShort = Tri("充电器带不动整机，差的 %.1f W 由电池补", "充電器帶不動整機，差的 %.1f W 由電池補", "Charger can't keep up — %.1f W from battery")
     static let vGood = Tri("满功率协商，充电套装一切正常", "滿功率協商，充電套裝一切正常", "Negotiated at full power — kit is fine")
     static let vLimited = Tri("当前协商 %@W，低于套装上限 %@W", "當前協商 %@W，低於套裝上限 %@W", "Negotiated %@W, below kit max %@W")
     static let unknown = Tri("未上报", "未上報", "not reported")

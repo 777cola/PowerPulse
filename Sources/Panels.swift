@@ -41,7 +41,7 @@ final class NowPanel: Panel {
     private let wallCard = MetricCard(title: S.wall.v(Settings.shared.lang), symbol: "powerplug.fill", color: D.purple)
     private let sysCard = MetricCard(title: S.systemUse.v(Settings.shared.lang), symbol: "desktopcomputer", color: D.blue)
     private let batCard = MetricCard(title: S.batteryOut.v(Settings.shared.lang), symbol: "battery.25", color: D.orange)
-    private let stateCard = MetricCard(title: S.battery.v(Settings.shared.lang), symbol: "bolt.fill", color: D.green)
+    private let stateCard = MetricCard(title: S.battery.v(Settings.shared.lang), symbol: "battery.100", color: D.green)
 
     private let adapterLine = label("", font: D.text(10), color: D.secondary)
     private let adapterValue = label("", font: D.num(10, .medium), color: D.label, align: .right)
@@ -119,8 +119,9 @@ final class NowPanel: Panel {
             batCard.update(title: s.isPluggedIn ? S.batteryOut.v(lang) : S.batteryOut.v(lang),
                            value: String(format: "%.1f W", s.batteryDischargeW), valueColor: D.orange)
         }
-        stateCard.update(title: "\(S.battery.v(lang)) \(s.percent)%",
-                         value: s.statusTextKey.v(lang),
+        // 状态当小标题、电量当大字：英文 "Battery 100%" 这种长标题会把卡片挤爆
+        stateCard.update(title: s.statusTextKey.v(lang),
+                         value: "\(s.percent)%",
                          valueColor: s.isCharging ? D.green : (s.percent <= 15 ? D.red : D.label))
 
         if let a, s.isPluggedIn {
