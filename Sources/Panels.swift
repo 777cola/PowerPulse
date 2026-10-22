@@ -568,8 +568,9 @@ final class SettingsPanel: Panel {
             return r
         }
 
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.0"
-        aboutLabel.stringValue = "PowerPulse \(version) · AutumnPants · MIT"
+        // 直接跑裸二进制时没有 Info.plist，别编一个假的 "2.0" 出来
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        aboutLabel.stringValue = version.map { "PowerPulse \($0) · AutumnPants · MIT" } ?? "PowerPulse · AutumnPants · MIT"
 
         updateButton = PillButton(S.checkUpdate.v(l), target: self, action: #selector(checkUpdate))
         let clearButton = PillButton(S.reset.v(l), target: self, action: #selector(clearHistory))

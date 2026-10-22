@@ -132,7 +132,7 @@ enum S {
     static let notifyLow = Tri("低电量提醒", "低電量提醒", "Low battery alert")
     static let notifyFull = Tri("充满提醒", "充滿提醒", "Full charge alert")
     static let notifyUnplug = Tri("拔电提醒", "拔電提醒", "Unplug alert")
-    static let notifyHeat = Tri("高温充电提醒", "高溫充電提醒", "Hot charging alert")
+    static let notifyHeat = Tri("电池高温提醒", "電池高溫提醒", "Battery heat alert")
     static let notifyAnomaly = Tri("充电异常提醒", "充電異常提醒", "Charging anomaly")
     static let heatThreshold = Tri("高温阈值", "高溫閾值", "Heat threshold")
     static let forever = Tri("永久", "永久", "Forever")
