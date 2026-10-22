@@ -181,6 +181,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
+        // --widget-text：小组件加不到桌面上也能核对三语文案
+        if CommandLine.arguments.contains("--widget-text") {
+            for lang in ["zh", "tw", "en"] {
+                let t = WText(lang: lang)
+                print("--- \(lang) ---")
+                print("状态: \(t.charging) / \(t.full) / \(t.pluggedIn) / \(t.discharging) / \(t.assisting) / \(t.directPower)")
+                print("档位: \(t.gear(52, 60))  \(t.kitMax(60))  \(t.health("92"))")
+                print("功率: \(t.wall(52))  \(t.system(12))")
+                print("电池: \(t.into("39.5", t.toFull(64)))")
+                print("      \(t.out("6.8", t.rest(182)))")
+                print("无电池: \(t.noBattery)   时间: \(t.rest(0)) | \(t.rest(65535)) | \(t.rest(5))")
+                var cases: [(String, WidgetSnapshot)] = []
+                func mk(_ name: String, _ build: (inout WidgetSnapshot) -> Void) {
+                    var w = WidgetSnapshot(); w.lang = lang; build(&w); cases.append((name, w))
+                }
+                mk("充电 87%") { $0.percent = 87; $0.charging = true; $0.plugged = true }
+                mk("满电静置") { $0.percent = 100; $0.plugged = true }
+                mk("补充供电") { $0.percent = 43; $0.plugged = true; $0.draining = true }
+                mk("电池放电") { $0.percent = 62 }
+                mk("台式机") { $0.hasBattery = false; $0.plugged = true }
+                print("状态映射: " + cases.map { "\($0.0)→\($0.1.stateText)" }.joined(separator: " · "))
+            }
+            exit(0)
+        }
+
         // 命令行开关：--login=on / --login=off / --login=status
         // 用来在没有界面自动化权限时核对登录项，装完直接跑一条。
         if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--login=") }) {
@@ -662,6 +687,8 @@ extension PopoverController {
             }
         }
 
+        let originalLang = Settings.shared.lang
+        defer { Settings.shared.lang = originalLang }
         for lang in Lang.allCases {
             Settings.shared.lang = lang
             rebuild()
@@ -669,7 +696,7 @@ extension PopoverController {
         }
 
         // 反复切语言，视图数量必须保持恒定（以前会越切越叠）
-        Settings.shared.lang = .zh
+        Settings.shared.lang = Lang.allCases[0]
         rebuild()
         let before = container.subviews.count
         for _ in 0..<6 { rebuild() }

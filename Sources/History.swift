@@ -40,6 +40,9 @@ final class HistoryStore {
     private var lastWrite = Date.distantPast
     private var lastCharging = false
     private var lastPlugged = false
+    private var lastWall = Double.nan
+    private var lastBattery = Double.nan
+    private var lastPercent = -1
     private var cachedRecent: [SampleRow] = []
 
     var dbPath: String {
@@ -69,12 +72,21 @@ final class HistoryStore {
     // MARK: 写入
 
     func record(_ s: PowerSnapshot, adapter: AdapterInfo?) {
+        // 以前每 2 秒写一条，一天 2 万行，而 7 天图是按小时聚合的——纯浪费磁盘和唤醒。
+        // 现在：插拔/充放切换立刻写；功率挪动 1.5W 以上或电量变了才写；其余 30 秒兜底一条。
         let stateChanged = s.isCharging != lastCharging || s.isPluggedIn != lastPlugged
-        let due = Date().timeIntervalSince(lastWrite) >= max(2, Settings.shared.interval)
-        guard stateChanged || due else { return }
+        let elapsed = Date().timeIntervalSince(lastWrite)
+        let moved = abs(s.wallW - lastWall) >= 1.5
+            || abs(s.batteryW - lastBattery) >= 1.5
+            || s.percent != lastPercent
+        let due = elapsed >= 30
+        guard stateChanged || (elapsed >= 5 && (moved || due)) else { return }
         lastWrite = Date()
         lastCharging = s.isCharging
         lastPlugged = s.isPluggedIn
+        lastWall = s.wallW
+        lastBattery = s.batteryW
+        lastPercent = s.percent
 
         queue.async { [weak self] in
             guard let self, self.db != nil else { return }

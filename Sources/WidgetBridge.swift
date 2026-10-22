@@ -12,6 +12,8 @@ enum WidgetBridge {
         w.percent = s.percent
         w.charging = s.isCharging
         w.plugged = s.isPluggedIn
+        w.draining = s.isPluggedIn && !s.isCharging && s.batteryW > 0.3
+        w.lang = Settings.shared.lang.rawValue
         w.wallW = s.wallW
         w.systemW = s.systemUsageW
         w.batteryW = s.batteryW
@@ -23,14 +25,14 @@ enum WidgetBridge {
         w.health = s.healthPercent
         w.updated = s.timestamp
         // 每秒写一次文件没必要：状态没变就 5 秒写一次兜底
-        let stateKey = "\(s.percent / 5)|\(s.isCharging)|\(s.isPluggedIn)|\(Int(s.wallW.rounded()))"
+        let stateKey = "\(s.percent / 5)|\(s.isCharging)|\(s.isPluggedIn)|\(Int(s.wallW.rounded()))|\(w.lang)"
         if stateKey != lastKey || Date().timeIntervalSince(lastWrite) >= 5 {
             w.save()
             lastWrite = Date()
         }
 
         // 电量每 5% 一档，加上插拔/充电状态，够了
-        let key = "\(s.percent / 5)|\(s.isCharging)|\(s.isPluggedIn)|\(Int((a?.negotiatedW ?? 0).rounded()))"
+        let key = "\(s.percent / 5)|\(s.isCharging)|\(s.isPluggedIn)|\(Int((a?.negotiatedW ?? 0).rounded()))|\(w.lang)"
         guard key != lastKey else { return }
         lastKey = key
         WidgetCenter.shared.reloadAllTimelines()

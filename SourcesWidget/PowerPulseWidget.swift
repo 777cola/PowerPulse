@@ -88,7 +88,7 @@ struct WidgetView: View {
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .monospacedDigit()
                 Spacer(minLength: 0)
-                Text(s.plugged ? "档位 \(Int(s.adapterW))/\(Int(s.adapterMax))" : restText)
+                Text(s.plugged ? s.text.gear(Int(s.adapterW), Int(s.adapterMax)) : s.text.rest(s.timeToEmpty))
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
@@ -105,7 +105,7 @@ struct WidgetView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(s.plugged ? "套装上限 \(Int(s.adapterMax))W" : "电池健康 \(String(format: "%.0f", s.health))%")
+                Text(s.plugged ? s.text.kitMax(Int(s.adapterMax)) : s.text.health(String(format: "%.0f", s.health)))
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
@@ -118,10 +118,10 @@ struct WidgetView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("墙插 \(Int(s.wallW.rounded())) W")
+                    Text(s.text.wall(Int(s.wallW.rounded())))
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .monospacedDigit()
-                    Text("系统 \(Int(s.systemW.rounded())) W")
+                    Text(s.text.system(Int(s.systemW.rounded())))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -138,7 +138,7 @@ struct WidgetView: View {
                 .frame(height: 6)
             }
             HStack(spacing: 4) {
-                Text(s.hasBattery ? (s.charging ? "电池 \(String(format: "%.1f", s.batteryW)) W 充入 · \(remainText)" : "电池放电 \(String(format: "%.1f", s.batteryW)) W · \(remainText)") : "插电直供 · 无电池")
+                Text(batteryLine)
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -151,19 +151,14 @@ struct WidgetView: View {
         }
     }
 
-    private var restText: String {
-        guard s.timeToEmpty > 0 else { return "—" }
-        return "剩 \(s.timeToEmpty / 60):" + String(format: "%02d", s.timeToEmpty % 60)
-    }
-
-    private var remainText: String {
-        if s.charging, s.timeToFull > 0 {
-            return "\(s.timeToFull / 60)h\(String(format: "%02d", s.timeToFull % 60))m 充满"
+    /// 电池这一行：在充就说充进去多少，在放就说放出来多少，再加上剩余时间
+    private var batteryLine: String {
+        guard s.hasBattery else { return s.text.noBattery }
+        let w = String(format: "%.1f", s.batteryW)
+        if s.charging {
+            return s.text.into(w, s.text.toFull(s.timeToFull))
         }
-        if s.timeToEmpty > 0 {
-            return "剩 \(s.timeToEmpty / 60):" + String(format: "%02d", s.timeToEmpty % 60)
-        }
-        return "—"
+        return s.text.out(w, s.text.rest(s.timeToEmpty))
     }
 }
 
