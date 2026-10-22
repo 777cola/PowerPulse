@@ -64,7 +64,7 @@ curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash
 
 | 面板 | 回答什么 |
 |---|---|
-| **功率流** | 能量从哪来、到哪去。带子粗细跟着瓦数走，插电时自动分成系统与电池两条 |
+| **功率流** | 能量从哪来、到哪去。带子粗细跟着瓦数走：正常充电时充电器分成「系统 + 电池」两路；充电器带不动整机时，充电器和电池两路一起喂系统 |
 | **系统监控** | CPU / GPU / 内存占用，5 分钟功耗曲线，按能耗排序的进程榜 |
 | **充电历史** | 最近一次充进去多少 Wh、近 7 天每天多少、导出 CSV |
 | **充电器** | 协商到几伏几安、支持哪些 PD 档位、为什么没跑满 |
@@ -218,6 +218,7 @@ SourcesWidget/
 
 | 版本 | 内容 |
 |---|---|
+| **2.1.1** | 修功率流「插着电就一定在充电」的假设：`IsCharging` 只说明充电器在线，电池可能在放电。现在分三种流向，并修「预计充满 1092:15」（系统给的是 65535 哨兵值） |
 | **2.1.0** | 台式机支持；修电池机菜单栏「插头与电池图标并排」；修 100% 仍显示「预计充满 44 分钟」；系统监控补 5 分钟时间刻度 |
 | **2.0.0** | 纯 AppKit 重写。修旧版历史插电即清空、内存重复计数、菜单栏 10 秒才刷新；新增充电器识别、充电体检、SQLite 历史、通知、桌面小组件、三语界面 |
 | **1.0.x** | SwiftUI 初版，基础电量与功率显示 |
@@ -274,7 +275,7 @@ Three numbers that must add up:
 
 | Panel | Answers |
 |---|---|
-| **Power Flow** | Where energy goes; band thickness follows wattage |
+| **Power Flow** | Where energy goes; band thickness follows wattage. Charging splits into system + battery; if the charger can't keep up, charger and battery feed the system together |
 | **System** | CPU / GPU / memory, a 5-minute power curve, energy-ranked process list |
 | **History** | Last session's Wh, 7-day bars, CSV export |
 | **Adapter** | Negotiated volts/amps, PD capability table, and why it isn't maxed out |

@@ -48,6 +48,7 @@ enum S {
 
     static let remaining = Tri("预计可用", "預計可用", "Time left")
     static let toFull = Tri("预计充满", "預計充滿", "To full")
+    static let supplement = Tri("电池在补充", "電池在補充", "Battery assisting")
     static let calculating = Tri("计算中", "計算中", "—")
 
     static let adapterTitle = Tri("充电器", "充電器", "Charger")
@@ -269,10 +270,12 @@ func fmtDuration(_ seconds: Double) -> String {
     return "\(m / 60)h \(m % 60)m"
 }
 
-func fmtClock(_ minutes: Int) -> String {
-    if minutes <= 0 { return "—" }
+func fmtClock(_ minutes: Int, _ lang: Lang = Settings.shared.lang) -> String {
+    // 65535 这类哨兵值表示系统算不出剩余时间，别当真排成 1092:15
+    if minutes <= 0 || minutes >= 1440 { return "—" }
     if minutes < 60 { return "\(minutes) min" }
-    return "\(minutes / 60):" + String(format: "%02d", minutes % 60)
+    let h = minutes / 60, m = minutes % 60
+    return lang == .en ? "\(h)h \(m)m" : "\(h) 小时 \(m) 分"
 }
 
 extension NSView {

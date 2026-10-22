@@ -95,6 +95,7 @@ final class FlowView: NSView {
             || s.systemUsageW != snapshot.systemUsageW
             || s.batteryChargeW != snapshot.batteryChargeW
             || s.batteryW != snapshot.batteryW
+            || s.batteryDraining != snapshot.batteryDraining
             || s.percent != snapshot.percent
             || s.timeToFull != snapshot.timeToFull
             || s.timeToEmpty != snapshot.timeToEmpty
@@ -129,7 +130,11 @@ final class FlowView: NSView {
         }
         computeGeometry()
         if renderingCache {           // 正在抓缓存：只画静态层
-            if snapshot.isPluggedIn { drawPluggedBody() } else { drawBatteryOnlyBody() }
+            switch snapshot.flowMode {
+            case .charging: drawPluggedBody()
+            case .supplementing: drawSupplementBody()
+            case .discharging: drawBatteryOnlyBody()
+            }
             return
         }
 
@@ -180,6 +185,19 @@ final class FlowView: NSView {
 
     private func computeGeometry() {
         let h = bounds.height
+        if snapshot.flowMode == .supplementing {
+            // 两路进、一路出：上墙插、下电池，中间高度合到系统
+            let wallH = bandHeight(max(snapshot.wallW, 0.1))
+            let batH = bandHeight(max(snapshot.batteryW, 0.1))
+            let blockH = wallH + bandGap + batH
+            let top = (h - blockH) / 2
+            bands = [
+                Band(centerY: top + wallH / 2, height: wallH, color: D.purple, moving: true, sweep: true),
+                Band(centerY: top + wallH + bandGap + batH / 2, height: batH,
+                     color: D.orange, moving: true, sweep: true),
+            ]
+            return
+        }
         if snapshot.isPluggedIn {
             let sysW = max(snapshot.systemUsageW, 0.1)
             let chgW = max(snapshot.batteryChargeW, 0.1)
@@ -230,17 +248,48 @@ final class FlowView: NSView {
         drawCapsule("\(String(format: "%.1f", sysW)) W", centerY: sysY, bandHeight: bands[0].height, color: D.blue)
 
         let tail: String
-        if charging && snapshot.percent < 100 && snapshot.timeToFull > 0 {
-            tail = "\(S.toFull.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToFull))"
-        } else if charging && snapshot.percent >= 100 {
-            // 已经 100% 了还写"预计充满 44 分钟"就是自相矛盾
-            tail = S.full.v(Settings.shared.lang)
-        } else if snapshot.percent >= 99 {
-            tail = S.full.v(Settings.shared.lang)
+        let lang = Settings.shared.lang
+        if snapshot.percent >= 100 {
+            // 满了还写"预计充满"就是自相矛盾
+            tail = S.full.v(lang)
+        } else if charging, snapshot.timeToFull > 0, snapshot.timeToFull < 1440 {
+            // 65535 是系统"算不出"的哨兵值，不能排成 1092:15
+            tail = "\(S.toFull.v(lang)) \(fmtClock(snapshot.timeToFull, lang))"
         } else {
-            tail = "\(S.remaining.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToEmpty))"
+            tail = S.charging.v(lang)
         }
         drawCaption(below: top + blockH + 8, text: tail)
+    }
+
+    /// 插着电但充电器不够：墙插和电池两路一起喂系统
+    private func drawSupplementBody() {
+        let lang = Settings.shared.lang
+        let wallBand = bands[0]
+        let batBand = bands[1]
+        let blockH = wallBand.height + bandGap + batBand.height
+        let top = (bounds.height - blockH) / 2
+        let midY = bounds.height / 2
+
+        for b in bands { drawBandBody(b) }
+
+        // 汇流条：两根带子在右边并成一路，再接系统
+        let bus = NSRect(x: endX + 1, y: top, width: 5, height: blockH)
+        D.blue.withAlphaComponent(0.5).setFill()
+        NSBezierPath(roundedRect: bus, xRadius: 2.5, yRadius: 2.5).fill()
+
+        drawNode(x: 0, centerY: wallBand.centerY, height: max(wallBand.height, 46),
+                 symbol: "powerplug.fill", value: String(format: "%.1f W", snapshot.wallW), color: D.purple)
+        drawNode(x: 0, centerY: batBand.centerY, height: max(batBand.height, 46),
+                 symbol: "battery.50", value: String(format: "%.1f W", snapshot.batteryW), color: D.orange)
+        drawNode(x: bounds.width - nodeW, centerY: midY, height: max(blockH, 46),
+                 symbol: "desktopcomputer", value: String(format: "%.1f W", snapshot.systemUsageW), color: D.blue)
+
+        drawCapsule("\(String(format: "%.1f", max(snapshot.wallW, 0.1))) W",
+                    centerY: wallBand.centerY, bandHeight: wallBand.height, color: D.purple)
+        drawCapsule("\(String(format: "%.1f", max(snapshot.batteryW, 0.1))) W",
+                    centerY: batBand.centerY, bandHeight: batBand.height, color: D.orange)
+
+        drawCaption(below: top + blockH + 8, text: S.supplement.v(lang))
     }
 
     private func drawBatteryOnlyBody() {

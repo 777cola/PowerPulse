@@ -594,7 +594,11 @@ extension PopoverController {
     func renderAll(to dir: String) {
         HistoryStore.shared.open()
         var (power, adapter) = Sampler.shared.sampleOnce()
-        if CommandLine.arguments.contains("--plugged") {
+        if CommandLine.arguments.contains("--supplement") {
+            // 插着弱充电器、电池在补：两路进、一路出
+            power = .demoSupplement()
+            adapter = .demoWeakAdapter()
+        } else if CommandLine.arguments.contains("--plugged") {
             power = .demoPlugged()
             adapter = .demoAdapter()
         }

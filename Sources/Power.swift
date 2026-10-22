@@ -9,6 +9,7 @@ struct PowerSnapshot {
     var wallW: Double = 0          // 墙插输入（SystemPowerIn）
     var systemLoadW: Double = 0    // 系统负载（SystemLoad）
     var batteryW: Double = 0       // 电池功率绝对值
+    var batteryDraining = false     // BatteryPower 为负：电池在放电
     var adapterLossW: Double = 0
     var isCharging = false
     var isPluggedIn = false
@@ -36,12 +37,23 @@ struct PowerSnapshot {
     var healthPercent: Double {
         designCapacity > 0 ? Double(fullCapacity) / Double(designCapacity) * 100 : 0
     }
+    /// 电从哪来、到哪去
+    var flowMode: FlowMode {
+        if !isPluggedIn { return .discharging }
+        if isCharging && !batteryDraining { return .charging }
+        if batteryDraining && batteryW > 0.3 { return .supplementing }
+        return .charging          // 插着但静置（电量满、没有净流入）
+    }
     var statusTextKey: Tri {
         if isCharging { return S.charging }
+        if flowMode == .supplementing { return S.supplement }
         if isPluggedIn { return percent >= 99 ? S.full : S.plugged }
         return S.discharging
     }
 }
+
+/// 三种能量流向：充电器喂系统和电池 / 充电器和电池一起喂系统 / 只有电池
+enum FlowMode { case charging, supplementing, discharging }
 
 // MARK: - 充电器
 
@@ -182,10 +194,13 @@ final class Sampler {
         snap.wallW = telMW("SystemPowerIn") / 1000
         snap.systemLoadW = telMW("SystemLoad") / 1000
         let raw = (tel["BatteryPower"] as? NSNumber)?.uint64Value ?? 0
-        snap.batteryW = abs(Double(Int64(bitPattern: raw))) / 1000
+        let signed = Int64(bitPattern: raw)
+        snap.batteryW = abs(Double(signed)) / 1000
+        snap.batteryDraining = signed < 0     // 负值 = 电池在放电
         snap.adapterLossW = telMW("AdapterEfficiencyLoss") / 1000
 
-        snap.isCharging = dict["IsCharging"] as? Bool ?? false
+        // IsCharging 只说明"充电器在线"，电池实际可能在放电（充电器功率不够或电量已满）
+        snap.isCharging = (dict["IsCharging"] as? Bool ?? false) && !snap.batteryDraining
         snap.isPluggedIn = dict["ExternalConnected"] as? Bool ?? false
         snap.percent = (dict["CurrentCapacity"] as? NSNumber)?.intValue ?? 0
         snap.cycleCount = (dict["CycleCount"] as? NSNumber)?.intValue ?? 0
@@ -441,6 +456,29 @@ extension PowerSnapshot {
     }
 }
 
+extension PowerSnapshot {
+    /// 插着 5W 充电器但系统要用 9W：电池得往外补 6.8W（用户截图里那种情况）
+    static func demoSupplement() -> PowerSnapshot {
+        var d = PowerSnapshot()
+        d.hasBattery = true
+        d.isPluggedIn = true
+        d.isCharging = false
+        d.batteryDraining = true
+        d.percent = 100
+        d.wallW = 2.4
+        d.systemLoadW = 9.1
+        d.batteryW = 6.8
+        d.currentCapacity = 4297
+        d.fullCapacity = 4297
+        d.designCapacity = 4629
+        d.cycleCount = 176
+        d.temperature = 31.5
+        d.timeToFull = 65535      // 系统"算不出"的哨兵值
+        d.timeToEmpty = 182
+        return d
+    }
+}
+
 extension AdapterInfo {
     static func demoAdapter() -> AdapterInfo {
         var a = AdapterInfo()
@@ -451,6 +489,19 @@ extension AdapterInfo {
         a.tier = 2
         a.name = "60W USB-C Power Adapter"
         a.pdos = [5.0, 9.0, 12.0, 15.0, 20.0].map { AdapterPDO(volts: $0, amps: 3.0) }
+        return a
+    }
+
+    /// 5W 小充电器：插着，但喂不动整机
+    static func demoWeakAdapter() -> AdapterInfo {
+        var a = AdapterInfo()
+        a.negotiatedW = 5
+        a.volts = 5
+        a.amps = 1
+        a.maxW = 5
+        a.tier = 0
+        a.name = "5W USB-C Power Adapter"
+        a.pdos = [AdapterPDO(volts: 5.0, amps: 1.0)]
         return a
     }
 }
