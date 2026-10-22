@@ -55,7 +55,8 @@ final class Notifier {
             post(S.nUnplugTitle.v(lang),
                  String(format: S.nUnplugBody.v(lang), fmtClock(s.timeToEmpty)), id: "unplug")
         }
-        if set.notifyHeat, s.isCharging, s.temperature >= set.heatThreshold, !heatFired {
+        // 不看是否在充电：电池放热跟充电方向无关，插着电却在补的时候更该提醒
+        if set.notifyHeat, s.temperature >= set.heatThreshold, !heatFired {
             heatFired = true
             post(S.nHeatTitle.v(lang), String(format: S.nHeatBody.v(lang), s.temperature), id: "heat")
         }

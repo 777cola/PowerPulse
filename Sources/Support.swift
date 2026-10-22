@@ -105,7 +105,7 @@ enum S {
     static let nFullBody  = Tri("可以拔掉电源了，有利于电池健康", "可以拔掉電源了，有利於電池健康", "Unplug to save battery health")
     static let nUnplugBody = Tri("预计可用 %@", "預計可用 %@", "Estimated %@")
     static let nHeatTitle = Tri("电池偏热", "電池偏熱", "Battery is warm")
-    static let nHeatBody  = Tri("充电中 %.1f℃，建议通风", "充電中 %.1f℃，建議通風", "%.1f°C while charging")
+    static let nHeatBody  = Tri("电池 %.1f℃，建议通风", "電池 %.1f℃，建議通風", "Battery at %.1f°C — let it breathe")
     static let nSlowTitle = Tri("充电功率偏低", "充電功率偏低", "Charging looks slow")
     static let nSlowBody  = Tri("只协商到 %.0fW（上限 %.0fW）", "只協商到 %.0fW（上限 %.0fW）", "Negotiated %.0fW of %.0fW")
     static let energyHint = Tri("仅统计当前用户可见的进程", "僅統計當前使用者可見的程序", "Current-user processes only")
