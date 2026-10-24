@@ -28,8 +28,14 @@ struct PowerSnapshot {
     var thermallyLimited = 0
     var timestamp = Date()
 
+    /// 系统功耗。插着电时用"墙插 − 电池"的残差，保证图里 墙插 = 系统 + 电池 永远对得上；
+    /// PSTR 是瞬时采样，编译这种负载下会比残差高 6W，三条数并排就自相矛盾了。
     var systemUsageW: Double {
-        if isPluggedIn { return systemLoadW > 0 ? systemLoadW : max(wallW - batteryW, 0) }
+        if isPluggedIn, wallW > 0.5 {
+            let flow = batteryDraining ? -batteryW : batteryW
+            return max(wallW - flow, 0.3)
+        }
+        if systemLoadW > 0.5 { return systemLoadW }
         return batteryW
     }
     var batteryChargeW: Double { isCharging ? batteryW : 0 }
@@ -197,17 +203,42 @@ final class Sampler {
         let tel = dict["PowerTelemetryData"] as? [String: Any] ?? [:]
         func telMW(_ k: String) -> Double { (tel[k] as? NSNumber).map { $0.doubleValue } ?? 0 }
 
-        snap.wallW = telMW("SystemPowerIn") / 1000
-        snap.systemLoadW = telMW("SystemLoad") / 1000
-        let raw = (tel["BatteryPower"] as? NSNumber)?.uint64Value ?? 0
-        let signed = Int64(bitPattern: raw)
-        snap.batteryW = abs(Double(signed)) / 1000
-        snap.batteryDraining = signed < 0     // 负值 = 电池在放电
+        // PowerTelemetryData 会整块停更：插着 60W 快充时它仍报 SystemPowerIn=0、
+        // SystemLoad=0.6W，而电池其实在吃 44W。所以各个数都换成能自洽的来源：
+        //   电池 = 顶层 BatteryPower（正充负放）→ Amperage×Voltage → 遥测
+        //   系统 = SMC PSTR → 遥测 SystemLoad
+        //   墙插 = SMC PDTR → 遥测 SystemPowerIn → 系统 ± 电池
+        let battTop = (dict["BatteryPower"] as? NSNumber)?.int64Value ?? 0
+        let amp = (dict["Amperage"] as? NSNumber)?.doubleValue ?? 0
+        let volt = (dict["Voltage"] as? NSNumber)?.doubleValue ?? 0
+        var battMW = Double(battTop)
+        if abs(battMW) < 200 { battMW = amp * volt / 1000 }              // mW，两者都带符号
+        if abs(battMW) < 200 {
+            let raw = (tel["BatteryPower"] as? NSNumber)?.uint64Value ?? 0
+            battMW = Double(Int64(bitPattern: raw))
+        }
+        snap.batteryW = abs(battMW) / 1000
+        snap.batteryDraining = battMW < 0     // 负值 = 电池在放电
         snap.adapterLossW = telMW("AdapterEfficiencyLoss") / 1000
-
+        snap.isPluggedIn = dict["ExternalConnected"] as? Bool ?? false
         // IsCharging 只说明"充电器在线"，电池实际可能在放电（充电器功率不够或电量已满）
         snap.isCharging = (dict["IsCharging"] as? Bool ?? false) && !snap.batteryDraining
-        snap.isPluggedIn = dict["ExternalConnected"] as? Bool ?? false
+
+        let smcSys = SMCPower.read("PSTR")?.value
+        let smcWall = SMCPower.read("PDTR")?.value
+        snap.systemLoadW = (smcSys ?? 0) > 0.5 ? smcSys! : telMW("SystemLoad") / 1000
+
+        let telWall = telMW("SystemPowerIn") / 1000
+        if snap.isPluggedIn, let w = smcWall, w > 1 {
+            snap.wallW = w
+        } else {
+            snap.wallW = telWall
+        }
+        // 两条路都没数就自己拼：系统 + 电池充电（或 系统 − 电池放电）
+        if snap.wallW < 0.5, snap.isPluggedIn {
+            let flow = snap.batteryDraining ? -snap.batteryW : snap.batteryW
+            snap.wallW = max(snap.systemLoadW + flow, 0)
+        }
         snap.percent = (dict["CurrentCapacity"] as? NSNumber)?.intValue ?? 0
         snap.cycleCount = (dict["CycleCount"] as? NSNumber)?.intValue ?? 0
         snap.timeToFull = (dict["AvgTimeToFull"] as? NSNumber)?.intValue ?? 0

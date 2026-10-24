@@ -7,8 +7,8 @@
 import io, os, pathlib
 
 # 版本与包体积只在这里改一处
-SITE_VER = "2.1.3"
-ZIP_KB = "677"
+SITE_VER = "2.1.4"
+ZIP_KB = "678"
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
