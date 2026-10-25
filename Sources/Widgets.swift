@@ -313,6 +313,14 @@ final class TabBar: NSView {
     }
 
     func relabel() { needsDisplay = true }
+
+    /// 换一组 tab（台式机没有电池，隐藏历史和充电器）
+    func setItems(_ items: [Item]) {
+        self.items = items
+        iconCache = [:]
+        selected = min(selected, max(items.count - 1, 0))
+        needsDisplay = true
+    }
 }
 
 // MARK: - 分段控件样式的小按钮

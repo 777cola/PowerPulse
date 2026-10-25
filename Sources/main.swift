@@ -17,6 +17,9 @@ final class PopoverController: NSObject {
     private let panelHost = NSView()
     private var hostHeight: NSLayoutConstraint!
     private var tabBar: TabBar!
+    /// tab 序号 → 面板序号。台式机没有电池，2/3 两页永远是空的，直接从 tab 栏里拿掉。
+    private(set) var visibleTabs = [0, 1, 2, 3, 4]
+    private var hasBattery = true
     private(set) var panels: [Panel] = []
     private var current = 0
 
@@ -82,7 +85,10 @@ final class PopoverController: NSObject {
         hostHeight.isActive = true
 
         tabBar = TabBar(items: zip(symbols, titles).map { TabBar.Item(symbol: $0.0, title: $0.1) })
-        tabBar.onSelect = { [weak self] i in self?.show(i) }
+        tabBar.onSelect = { [weak self] i in
+            guard let self, self.visibleTabs.indices.contains(i) else { return }
+            self.show(self.visibleTabs[i])
+        }
 
         let stack = vstack([header, panelHost, tabBar], spacing: 0)
         root.addSubview(stack)
@@ -115,6 +121,15 @@ final class PopoverController: NSObject {
     // MARK: 切面板
 
     func select(_ idx: Int) { show(idx) }
+
+    /// 没有电池的 Mac：只留 功率流 / 系统监控 / 设置
+    func setHasBattery(_ v: Bool) {
+        guard v != hasBattery else { return }
+        hasBattery = v
+        visibleTabs = v ? [0, 1, 2, 3, 4] : [0, 1, 4]
+        tabBar.setItems(visibleTabs.map { TabBar.Item(symbol: symbols[$0], title: titles[$0]) })
+        if !visibleTabs.contains(current) { show(0) } else { show(current) }
+    }
     var panelCount: Int { panels.count }
     func panelsHeight(_ i: Int) -> CGFloat { sizeFor(i).height }
 
@@ -124,7 +139,7 @@ final class PopoverController: NSObject {
         for (i, p) in panels.enumerated() { p.isHidden = i != idx }
         headerTitle.stringValue = titles[idx].v(Settings.shared.lang)
         headerIcon.image = Icon.tinted(symbols[idx], color: D.secondary, size: 12)
-        tabBar.highlight(idx)
+        tabBar.highlight(visibleTabs.firstIndex(of: idx) ?? 0)
         if resizeOnly { tabBar.needsDisplay = true }
 
         hostHeight.constant = panels[idx].preferredHeight
@@ -169,7 +184,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     // 必须 lazy：PopoverController 会建 NSVisualEffectView / NSPopover 层级，
     // 放在存储属性初始化器里会在 applicationDidFinishLaunching 之前跑，状态栏窗口高度会变成 0
-    private lazy var popover = PopoverController()
+    // 建出来的时候要把"有没有电池"带进去，否则台式机上 tab 栏会多两个空页。
+    // 仍然保持懒加载：PopoverController 会建 NSPopover 层级，太早建状态栏窗口高度会变 0。
+    private var _popover: PopoverController?
+    private var popover: PopoverController {
+        if _popover == nil {
+            let pc = PopoverController()
+            pc.setHasBattery(hasBattery)
+            _popover = pc
+        }
+        return _popover!
+    }
+    private var hasBattery = true
     private var eventMonitor: Any?
     private var snapshot = PowerSnapshot()
     private var adapter: AdapterInfo?
@@ -272,6 +298,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.hasSampled = true
             self.snapshot = s
             self.adapter = a
+            // 台式机没有电池：tab 栏别留两个永远空的页
+            self.hasBattery = s.hasBattery
+            self._popover?.setHasBattery(s.hasBattery)
             self.onTick()
         }
         Sampler.shared.onSystem = { [weak self] st in self?.stats = st }
@@ -691,8 +720,10 @@ extension PopoverController {
 
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
 
+        setHasBattery(power.hasBattery)
+
         func render(_ tag: String) {
-            for i in 0..<panelCount {
+            for i in visibleTabs {
                 select(i)
                 let size = NSSize(width: D.width, height: panelsHeight(i))
                 container.setFrameSize(size)
@@ -711,7 +742,7 @@ extension PopoverController {
                 }
             }
             print("[render] \(tag) container.subviews=\(container.subviews.count)")
-            for i in 0..<panelCount {
+            for i in visibleTabs {
                 let issues = auditOverflow(panels[i])
                 if !issues.isEmpty {
                     print("  ⚠️ panel\(i) overflow \(issues.count):")
