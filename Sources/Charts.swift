@@ -8,6 +8,9 @@ final class LineChartView: NSView {
     var ticks: [(CGFloat, String)] = []
     var color: NSColor = D.green
     var unit = "W"
+    /// 可选：每个点的时间（秒）。给了就按真实时间放点——
+    /// 采样密度变过或中间断过时，按序号画会把时间轴拉歪（01:23→02:01 和 02:01→02:20 等宽）。
+    private var times: [Double] = []
     private var minMax: (Double, Double) = (0, 10)
 
     override var isFlipped: Bool { false }
@@ -15,6 +18,14 @@ final class LineChartView: NSView {
     func set(_ v: [Double], labels: [String] = []) {
         values = v
         self.labels = labels
+        times = []
+        needsDisplay = true
+    }
+
+    func set(_ v: [Double], labels: [String], times: [Double]) {
+        values = v
+        self.labels = labels
+        self.times = times.count == v.count ? times : []
         needsDisplay = true
     }
 
@@ -41,10 +52,17 @@ final class LineChartView: NSView {
         let mx = max(values.max() ?? 1, 1) * 1.15
         minMax = (0, mx)
 
+        let t0 = times.first ?? 0
+        let tSpan = max((times.last ?? 1) - t0, 0.001)
+        func fx(_ i: Int) -> CGFloat {
+            if times.isEmpty {
+                return b.minX + b.width * CGFloat(i) / CGFloat(values.count - 1)
+            }
+            return b.minX + b.width * CGFloat((times[i] - t0) / tSpan)
+        }
         func pt(_ i: Int) -> NSPoint {
-            let x = b.minX + b.width * CGFloat(i) / CGFloat(values.count - 1)
             let y = b.minY + b.height * CGFloat(min(values[i] / mx, 1))
-            return NSPoint(x: x, y: y)
+            return NSPoint(x: fx(i), y: y)
         }
 
         // 面积
@@ -88,11 +106,25 @@ final class LineChartView: NSView {
         // 时间轴
         if ticks.isEmpty, labels.count > 1 {
             let f = D.text(8)
-            for (i, l) in labels.enumerated() where i % max(labels.count / 3, 1) == 0 {
-                let x = b.minX + b.width * CGFloat(i) / CGFloat(labels.count - 1)
+            let step = max(labels.count / 3, 1)
+            var drawn = Set<Int>()
+            for (i, l) in labels.enumerated() where i % step == 0 {
+                drawn.insert(i)
+                let x = fx(i)
                 let sz = l.size(f)
                 l.draw(at: NSPoint(x: min(max(x - sz.width / 2, b.minX), b.maxX - sz.width), y: b.minY + 1),
                        withAttributes: [.font: f, .foregroundColor: D.tertiary])
+            }
+            // 末尾补一个：只按 0/⅓/⅔ 取样的话，曲线什么时候结束看不出来
+            let last = labels.count - 1
+            if last > 0, !drawn.contains(last) {
+                let sz = labels[last].size(f)
+                let x = min(max(fx(last) - sz.width, b.minX), b.maxX - sz.width)
+                // 跟前一个标签太近就不画，免得叠字
+                if fx(last) - x > 4 || labels.count < 4 {
+                    labels[last].draw(at: NSPoint(x: x, y: b.minY + 1),
+                                      withAttributes: [.font: f, .foregroundColor: D.tertiary])
+                }
             }
         }
     }

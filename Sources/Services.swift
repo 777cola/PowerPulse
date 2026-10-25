@@ -73,6 +73,15 @@ final class Notifier {
 
 enum LoginItem {
     static var isOn: Bool { SMAppService.mainApp.status == .enabled }
+    static var status: SMAppService.Status { SMAppService.mainApp.status }
+
+    /// 换过 App 包之后，系统里的登录项会变成 notFound（本次更新就踩到了，status=3）。
+    /// 用户明明开过自启，静默补登记一次；requiresApproval 是等用户在系统设置里点同意，别去碰。
+    static func repairIfNeeded() {
+        guard Settings.shared.autostart else { return }
+        guard status == .notFound || status == .notRegistered else { return }
+        _ = set(true)
+    }
 
     @discardableResult
     static func set(_ on: Bool) -> Bool {

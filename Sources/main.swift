@@ -181,6 +181,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
+        // --derive-test：三个数怎么合成是纯函数，不用插拔电源也能验
+        if CommandLine.arguments.contains("--derive-test") {
+            var fails = 0
+            func near(_ name: String, _ got: Double, _ want: Double) {
+                let ok = abs(got - want) <= 0.06
+                if !ok { fails += 1 }
+                print("\(ok ? "✓" : "✗") \(name): \(String(format: "%.2f", got)) (期望 \(String(format: "%.2f", want)))")
+            }
+            // 1. 60W 快充：SMC 读到墙插 55.6、电池吃 44.3 → 系统应剩 11.3
+            let w1 = PowerMath.pickWall(smc: 55.6, telemetry: 0, plugged: true, system: 10.5, battery: 44.3, draining: false)
+            near("快充·墙插", w1, 55.6)
+            near("快充·系统", PowerMath.pickSystem(wall: w1, battery: 44.3, draining: false, plugged: true, measured: 10.5, hasBattery: true), 11.3)
+            // 2. 遥测停更 + SMC 读不到：不能是 0，要拼成 系统 + 电池
+            let w2 = PowerMath.pickWall(smc: nil, telemetry: 0, plugged: true, system: 10.5, battery: 44.3, draining: false)
+            near("遥测停更·墙插", w2, 54.8)
+            // 3. 弱充电器：充电器 2.4W，电池再出 6.8W，系统共 9.2W
+            let w3 = PowerMath.pickWall(smc: 2.4, telemetry: 2.4, plugged: true, system: 9.2, battery: 6.8, draining: true)
+            near("补充供电·墙插", w3, 2.4)
+            near("补充供电·系统", PowerMath.pickSystem(wall: w3, battery: 6.8, draining: true, plugged: true, measured: 9.2, hasBattery: true), 9.2)
+            // 4. 没插电：墙插 0，系统看实测
+            let w4 = PowerMath.pickWall(smc: 0, telemetry: 0, plugged: false, system: 11.3, battery: 8.9, draining: true)
+            near("放电·墙插", w4, 0)
+            near("放电·系统=电池", PowerMath.pickSystem(wall: w4, battery: 8.9, draining: true, plugged: false, measured: 11.3, hasBattery: true), 8.9)
+            // 5. 满电涓流：墙插几乎全给系统
+            near("涓流·系统", PowerMath.pickSystem(wall: 15.7, battery: 0.1, draining: false, plugged: true, measured: 15.6, hasBattery: true), 15.6)
+            near("台式机·系统", PowerMath.pickSystem(wall: 0, battery: 0, draining: false, plugged: true, measured: 17.2, hasBattery: false), 17.2)
+            // 6. SMC 读到 0.9W（低于可信线）+ 遥测也是 0：退回拼装，不能显示 0.9
+            let w6 = PowerMath.pickWall(smc: 0.9, telemetry: 0, plugged: true, system: 10.0, battery: 2.0, draining: false)
+            near("弱信号·墙插", w6, 12.0)
+            print(fails == 0 ? "全部通过" : "\(fails) 项不符")
+            exit(fails == 0 ? 0 : 1)
+        }
         // --widget-text：小组件加不到桌面上也能核对三语文案
         if CommandLine.arguments.contains("--widget-text") {
             for lang in ["zh", "tw", "en"] {
@@ -244,6 +276,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         Sampler.shared.onSystem = { [weak self] st in self?.stats = st }
         Sampler.shared.onEnergy = { [weak self] e in self?.energy = e }
+        LoginItem.repairIfNeeded()
         if !skip.contains("sampler") { Sampler.shared.start(interval: Settings.shared.interval) }
 
         NotificationCenter.default.addObserver(forName: .ppSettingsChanged, object: nil, queue: .main) { [weak self] _ in

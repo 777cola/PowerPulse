@@ -152,7 +152,8 @@ final class MonitorPanel: Panel {
     /// 缓冲按"保留 5 分钟"给容量，而不是写死点数：
     /// 1 秒采样 = 300 点，2 秒采样 = 150 点。之前写死 90 点（默认 1 秒下只有 90 秒），
     /// 跟界面上/README 里说的「5 分钟历史」对不上。
-    private let liveBuffer = RingBuffer(capacity: max(60, Int(300 / max(Settings.shared.interval, 0.5))))
+    private var bufInterval = Settings.shared.interval
+    private var liveBuffer = RingBuffer(capacity: max(60, Int(300 / max(Settings.shared.interval, 0.5))))
     private var lastTickMinute = -1
 
     override var preferredHeight: CGFloat { 376 }
@@ -246,6 +247,11 @@ final class MonitorPanel: Panel {
         let showCPU = !power.hasBattery
         curveTitle.set((showCPU ? S.cpuCurve : S.powerCurve).v(lang))
         chart.unit = showCPU ? "%" : "W"
+        // 采样间隔改过就把容量按新的重算，否则 5 分钟窗口会被悄悄拉长
+        if bufInterval != Settings.shared.interval {
+            bufInterval = Settings.shared.interval
+            liveBuffer = RingBuffer(capacity: max(60, Int(300 / max(bufInterval, 0.5))))
+        }
         liveBuffer.append(showCPU ? stats.cpu : power.systemUsageW)
         chart.set(liveBuffer.array)
         updateTimeTicks()
@@ -343,10 +349,15 @@ final class HistoryPanel: Panel {
         peakCard.update(value: hasSession ? String(format: "%.0f W", session.peakW) : "—")
         durCard.update(value: hasSession ? fmtDuration(session.seconds) : "—")
 
-        let rows = HistoryStore.shared.recent(minutes: 60).filter { $0.charging }
+        // 画「这次充电」的整段，而不是最近 60 分钟——拔了插头也还在。
+        // x 按真实时间放点：中途采样密度变过（改间隔、重启过 App）也不会把时间轴拉歪。
+        let rows = HistoryStore.shared.lastSessionRows()
         let df = DateFormatter()
         df.dateFormat = "HH:mm"
-        chart.set(downsample(rows.map(\.battery)), labels: downsample(rows.map { df.string(from: $0.ts) }))
+        let t0 = rows.first?.ts ?? Date()
+        chart.set(downsample(rows.map(\.w)),
+                  labels: downsample(rows.map { df.string(from: $0.ts) }),
+                  times: downsample(rows.map { $0.ts.timeIntervalSince(t0) }))
         chart.color = rows.isEmpty ? D.tertiary : D.green
 
         let days = HistoryStore.shared.daily(days: 7)
@@ -539,7 +550,11 @@ final class SettingsPanel: Panel {
         let secSuffix = l == .en ? "s" : " 秒"
         intervalRow = PopupRow(S.interval.v(l), options: ["1\(secSuffix)", "2\(secSuffix)", "5\(secSuffix)"],
                                selected: [1.0, 2.0, 5.0].firstIndex(of: set.interval) ?? 0)
-        intervalRow.onChange = { i in set.interval = [1.0, 2.0, 5.0][max(0, min(i, 2))] }
+        intervalRow.onChange = { i in
+            // 以前只写 UserDefaults，定时器是按启动时的值 arm 的，改完不重启就没反应
+            set.interval = [1.0, 2.0, 5.0][max(0, min(i, 2))]
+            Sampler.shared.start(interval: set.interval)
+        }
 
         let retentions = [7, 30, 90, 0]
         retentionRow = PopupRow(S.retention.v(l),

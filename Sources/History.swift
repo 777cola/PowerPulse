@@ -138,18 +138,18 @@ final class HistoryStore {
 
     /// 最近一次充电（可能已经结束）。以前只统计"正在充电"的会话，
     /// 一旦拔掉电源四张卡就全变 "—"，看着像坏了。
-    func currentSession() -> SessionStats {
-        var st = SessionStats()
-        guard db != nil else { return st }
+    /// 最近一次充电会话的采样点（时间正序）。历史页那条曲线也用它，
+    /// 以前曲线只取"最近 60 分钟"，插头一拔就空成「暂无记录」，跟上面的汇总量自相矛盾。
+    func lastSessionRows() -> [(ts: Date, w: Double)] {
+        var rows: [(ts: Date, w: Double)] = []
+        guard db != nil else { return [] }
         queue.sync {
-            var rows: [(Date, Double)] = []
             var stmt: OpaquePointer?
             let sql = "SELECT ts,battery,charging FROM samples ORDER BY ts DESC LIMIT 43200;"
             guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return }
             defer { sqlite3_finalize(stmt) }
 
             var started = false
-            var firstRowWasCharging = false
             while sqlite3_step(stmt) == SQLITE_ROW {
                 let ts = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 0))
                 let w = sqlite3_column_double(stmt, 1)
@@ -157,23 +157,32 @@ final class HistoryStore {
                 if !started {
                     if !ch { continue }        // 跳过最近的非充电样本，往前找上一段充电
                     started = true
-                    firstRowWasCharging = true
-                    st.isActive = true
                 } else if !ch {
                     break                      // 这段充电结束
                 }
                 rows.append((ts, w))
             }
-            _ = firstRowWasCharging
-            guard let newest = rows.first, let oldest = rows.last else { return }
-            st.seconds = newest.0.timeIntervalSince(oldest.0)
-            for i in 0..<rows.count {
-                let dt = i + 1 < rows.count ? rows[i].0.timeIntervalSince(rows[i + 1].0) : 0
-                st.wh += rows[i].1 * max(dt, 0) / 3600
-                st.peakW = max(st.peakW, rows[i].1)
-            }
-            st.avgW = rows.map(\.1).reduce(0, +) / Double(rows.count)
         }
+        return rows.reversed()
+    }
+
+    func currentSession() -> SessionStats {
+        var st = SessionStats()
+        let rows = lastSessionRows()
+        guard let newest = rows.last, let oldest = rows.first else { return st }
+        // 每条采样按"到上一条的间隔"积分，间隔掐在 90 秒：合盖睡一晚再插电，
+        // 中间那段没有采样的空档不能当成在充电，否则一天能凭空多出十几 Wh。
+        var secs = 0.0
+        for i in 1..<rows.count {
+            let dt = min(max(rows[i].ts.timeIntervalSince(rows[i - 1].ts), 0), 90)
+            st.wh += rows[i].w * dt / 3600
+            secs += dt
+        }
+        st.seconds = secs
+        st.peakW = rows.map(\.w).max() ?? 0
+        st.avgW = rows.map(\.w).reduce(0, +) / Double(rows.count)
+        st.isActive = Date().timeIntervalSince(newest.ts) < 180
+        _ = oldest
         return st
     }
 
@@ -188,9 +197,9 @@ final class HistoryStore {
             WITH s AS (SELECT ts, charging, battery, LAG(ts) OVER (ORDER BY ts) AS prev
                        FROM samples WHERE ts >= ?)
             SELECT strftime('%Y-%m-%d', ts, 'unixepoch', 'localtime') AS d,
-                   SUM(CASE WHEN charging=1 AND prev IS NOT NULL THEN battery*(ts-prev)/3600.0 ELSE 0 END) AS wh,
+                   SUM(CASE WHEN charging=1 AND prev IS NOT NULL THEN battery*MIN(ts-prev,90)/3600.0 ELSE 0 END) AS wh,
                    MAX(CASE WHEN charging=1 THEN battery ELSE 0 END) AS peak,
-                   SUM(CASE WHEN charging=1 AND prev IS NOT NULL THEN ts-prev ELSE 0 END) AS dur
+                   SUM(CASE WHEN charging=1 AND prev IS NOT NULL THEN MIN(ts-prev,90) ELSE 0 END) AS dur
             FROM s GROUP BY d ORDER BY d;
             """
             guard sqlite3_prepare_v2(db, sql, -1, &st, nil) == SQLITE_OK else { return }

@@ -28,15 +28,12 @@ struct PowerSnapshot {
     var thermallyLimited = 0
     var timestamp = Date()
 
-    /// 系统功耗。插着电时用"墙插 − 电池"的残差，保证图里 墙插 = 系统 + 电池 永远对得上；
+
+    /// 系统功耗。插着电时取「墙插 − 电池」的残差，保证图里 墙插 = 系统 + 电池 永远对得上；
     /// PSTR 是瞬时采样，编译这种负载下会比残差高 6W，三条数并排就自相矛盾了。
     var systemUsageW: Double {
-        if isPluggedIn, wallW > 0.5 {
-            let flow = batteryDraining ? -batteryW : batteryW
-            return max(wallW - flow, 0.3)
-        }
-        if systemLoadW > 0.5 { return systemLoadW }
-        return batteryW
+        PowerMath.pickSystem(wall: wallW, battery: batteryW, draining: batteryDraining,
+                             plugged: isPluggedIn, measured: systemLoadW, hasBattery: hasBattery)
     }
     var batteryChargeW: Double { isCharging ? batteryW : 0 }
     var batteryDischargeW: Double { isCharging ? 0 : batteryW }
@@ -226,19 +223,10 @@ final class Sampler {
 
         let smcSys = SMCPower.read("PSTR")?.value
         let smcWall = SMCPower.read("PDTR")?.value
-        snap.systemLoadW = (smcSys ?? 0) > 0.5 ? smcSys! : telMW("SystemLoad") / 1000
-
-        let telWall = telMW("SystemPowerIn") / 1000
-        if snap.isPluggedIn, let w = smcWall, w > 1 {
-            snap.wallW = w
-        } else {
-            snap.wallW = telWall
-        }
-        // 两条路都没数就自己拼：系统 + 电池充电（或 系统 − 电池放电）
-        if snap.wallW < 0.5, snap.isPluggedIn {
-            let flow = snap.batteryDraining ? -snap.batteryW : snap.batteryW
-            snap.wallW = max(snap.systemLoadW + flow, 0)
-        }
+        if let s = smcSys, s > 0.5 { snap.systemLoadW = s } else { snap.systemLoadW = telMW("SystemLoad") / 1000 }
+        snap.wallW = PowerMath.pickWall(smc: smcWall, telemetry: telMW("SystemPowerIn") / 1000,
+                                        plugged: snap.isPluggedIn, system: snap.systemLoadW,
+                                        battery: snap.batteryW, draining: snap.batteryDraining)
         snap.percent = (dict["CurrentCapacity"] as? NSNumber)?.intValue ?? 0
         snap.cycleCount = (dict["CycleCount"] as? NSNumber)?.intValue ?? 0
         snap.timeToFull = (dict["AvgTimeToFull"] as? NSNumber)?.intValue ?? 0
@@ -540,5 +528,29 @@ extension AdapterInfo {
         a.name = "5W USB-C Power Adapter"
         a.pdos = [AdapterPDO(volts: 5.0, amps: 1.0)]
         return a
+    }
+}
+
+
+// 三个数怎么合成，抽成纯函数：没有真机也能断言（2.1.4 那次快充 0 W 就是这里出的）
+enum PowerMath {
+    /// 墙插功率：SMC → 遥测 → 系统 ± 电池
+    static func pickWall(smc: Double?, telemetry: Double, plugged: Bool,
+                         system: Double, battery: Double, draining: Bool) -> Double {
+        if plugged, let s = smc, s > 1 { return s }
+        if telemetry > 0.5 || !plugged { return telemetry }
+        return max(system + (draining ? -battery : battery), 0)
+    }
+
+    /// 系统功耗：插电时取「墙插 − 电池」的残差，保证 墙插 = 系统 + 电池。
+    /// 放电时电池吐出来的都给了系统，也用电池功率，图上才是一根对得上的带子；
+    /// PSTR 在电池端是 DC-DC 之后的数，比电池端低 0.7W，摆在一起又变成"对不上"。
+    static func pickSystem(wall: Double, battery: Double, draining: Bool,
+                           plugged: Bool, measured: Double, hasBattery: Bool) -> Double {
+        if plugged, wall > 0.5, hasBattery {
+            return max(wall - (draining ? -battery : battery), 0.3)
+        }
+        if hasBattery { return battery }
+        return measured > 0.5 ? measured : battery
     }
 }
