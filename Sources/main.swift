@@ -692,7 +692,10 @@ extension PopoverController {
         if CommandLine.arguments.contains("--nobattery") {
             power = PowerSnapshot()      // 台式机：没有电池
             power.hasBattery = false
-            power.desktopW = SMCPower.systemWatts() ?? 0   // 本机 SMC 有就真读，没有就 0
+            let dw = SMCPower.systemWatts() ?? 0           // 本机 SMC 有就真读，没有就 0
+            power.desktopW = dw
+            power.wallW = dw
+            power.systemLoadW = dw
             adapter = nil
         }
         let stats = Sampler.shared.systemOnce()

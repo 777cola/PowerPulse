@@ -119,6 +119,7 @@ enum S {
     static let noRecord = Tri("暂无记录", "暫無記錄", "No data yet")
     static let cpuCurve = Tri("CPU 占用曲线", "CPU 佔用曲線", "CPU load")
     static let noBattery = Tri("这台 Mac 没有电池", "這台 Mac 沒有電池", "No battery on this Mac")
+    static let mainsShort = Tri("整机直接取电", "整機直接取電", "Straight off the mains")
     static let mainsOnly = Tri("CPU / GPU / 内存仍可监控", "CPU / GPU / 記憶體仍可監控", "CPU, GPU and memory still work")
     static let exportCSV = Tri("导出 CSV", "匯出 CSV", "Export CSV")
     static let exported = Tri("已导出", "已匯出", "Exported")

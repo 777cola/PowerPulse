@@ -187,7 +187,13 @@ final class Sampler {
         guard service != IO_OBJECT_NULL else {
             // 台式机：没有电池，瓦数只能问 SMC。读不到就留 0，界面显示 —
             snap.hasBattery = false
-            if let w = SMCPower.systemWatts() { snap.desktopW = w }
+            if let w = SMCPower.systemWatts() {
+                snap.desktopW = w
+                // 台式机没有电池，整机吃多少墙插就出多少：两条数都填上，
+                // 功率流/历史/小组件才能和笔记本走同一套
+                snap.wallW = w
+                snap.systemLoadW = w
+            }
             return (snap, nil)
         }
         defer { IOObjectRelease(service) }

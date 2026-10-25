@@ -37,29 +37,6 @@ final class FlowView: NSView {
     override var isFlipped: Bool { true }
     override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: 160) }
 
-    /// 台式机：没有电池，没有墙插 / 电池功率，只说明现状
-    private func drawNoBatteryBody() {
-        let lang = Settings.shared.lang
-        let title = S.noBattery.v(lang)
-        let sub = S.mainsOnly.v(lang)
-
-        let f1 = D.text(13, .medium)
-        let f2 = D.text(10)
-        let s1 = title.size(f1)
-        let s2 = sub.size(f2)
-        let gap: CGFloat = 6
-        let total = s1.height + gap + s2.height
-        let top = (bounds.height - total) / 2
-
-        if let img = Icon.tinted("desktopcomputer", color: D.tertiary, size: 30) {
-            img.draw(in: NSRect(x: (bounds.midX - 15).rounded(), y: top - 36, width: 30, height: 30))
-        }
-        title.draw(at: NSPoint(x: (bounds.midX - s1.width / 2).rounded(), y: top.rounded()),
-                   withAttributes: [.font: f1, .foregroundColor: D.secondary])
-        sub.draw(at: NSPoint(x: (bounds.midX - s2.width / 2).rounded(), y: (top + s1.height + gap).rounded()),
-                 withAttributes: [.font: f2, .foregroundColor: D.tertiary])
-    }
-
     // MARK: - 动画
 
     func startAnimating() {
@@ -82,7 +59,8 @@ final class FlowView: NSView {
         // 按真实时间推进：主线程被采样/刷新占用时掉帧，但速度不变（不会忽快忽慢）
         let dt = min(now - lastTick, 0.25)
         lastTick = now
-        let w = max(snapshot.isPluggedIn ? snapshot.wallW : snapshot.batteryW, 1)
+        let w = max(snapshot.hasBattery ? (snapshot.isPluggedIn ? snapshot.wallW : snapshot.batteryW)
+                                        : snapshot.desktopW, 1)
         let speed = min(max(0.35 + w / 120.0, 0.35), 1.6)
         phase = (phase + CGFloat(speed * dt * 0.30)).truncatingRemainder(dividingBy: 1)
         needsDisplay = true
@@ -99,6 +77,8 @@ final class FlowView: NSView {
             || s.percent != snapshot.percent
             || s.timeToFull != snapshot.timeToFull
             || s.timeToEmpty != snapshot.timeToEmpty
+            || s.desktopW != snapshot.desktopW
+            || s.hasBattery != snapshot.hasBattery
             || a?.negotiatedW != adapter?.negotiatedW
         snapshot = s
         adapter = a
@@ -124,16 +104,16 @@ final class FlowView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         guard bounds.width > 120, bounds.height > 40 else { return }
-        if !snapshot.hasBattery {
-            drawNoBatteryBody()
-            return
-        }
         computeGeometry()
         if renderingCache {           // 正在抓缓存：只画静态层
-            switch snapshot.flowMode {
-            case .charging: drawPluggedBody()
-            case .supplementing: drawSupplementBody()
-            case .discharging: drawBatteryOnlyBody()
+            if !snapshot.hasBattery {
+                drawMainsBody()
+            } else {
+                switch snapshot.flowMode {
+                case .charging: drawPluggedBody()
+                case .supplementing: drawSupplementBody()
+                case .discharging: drawBatteryOnlyBody()
+                }
             }
             return
         }
@@ -158,6 +138,7 @@ final class FlowView: NSView {
         return "\(dark)|\(Int(bounds.width))x\(Int(bounds.height))|\(snapshot.isPluggedIn)|\(snapshot.isCharging)"
             + "|\(snapshot.wallW)|\(snapshot.systemUsageW)|\(snapshot.batteryChargeW)|\(snapshot.batteryW)"
             + "|\(snapshot.percent)|\(snapshot.timeToFull)|\(snapshot.timeToEmpty)|\(Settings.shared.lang.rawValue)"
+            + "|\(snapshot.hasBattery)|\(snapshot.desktopW)"
     }
 
     /// 把静态层抓成位图。用 NSView.cacheDisplay 而不是手算 CTM：
@@ -185,6 +166,12 @@ final class FlowView: NSView {
 
     private func computeGeometry() {
         let h = bounds.height
+        if !snapshot.hasBattery {
+            // 台式机：墙插直接喂整机，和"电池单独供电"是同一个形状，只是颜色是市电的紫
+            let wh = bandHeight(max(snapshot.desktopW, 0.1))
+            bands = [Band(centerY: h / 2, height: wh, color: D.purple, moving: true, sweep: true)]
+            return
+        }
         if snapshot.flowMode == .supplementing {
             // 两路进、一路出：上墙插、下电池，中间高度合到系统
             let wallH = bandHeight(max(snapshot.wallW, 0.1))
@@ -312,6 +299,21 @@ final class FlowView: NSView {
                     centerY: b.centerY, bandHeight: b.height, color: D.orange)
         drawCaption(below: b.centerY + b.height / 2 + 7,
                     text: "\(S.remaining.v(Settings.shared.lang)) \(fmtClock(snapshot.timeToEmpty))")
+    }
+
+    /// 台式机：左边墙插、右边系统，中间一条带动起来
+    private func drawMainsBody() {
+        let b = bands[0]
+        let known = snapshot.desktopW > 0.5
+        let w = max(snapshot.desktopW, 0.1)
+        let text = known ? String(format: "%.1f W", w) : "—"
+        drawBandBody(b)
+        drawNode(x: 0, centerY: b.centerY, height: max(b.height, 46),
+                 symbol: "powerplug.fill", value: text, color: D.purple)
+        drawNode(x: bounds.width - nodeW, centerY: b.centerY, height: max(b.height, 46),
+                 symbol: "desktopcomputer", value: S.system.v(Settings.shared.lang), color: D.purple)
+        if known { drawCapsule(text, centerY: b.centerY, bandHeight: b.height, color: D.purple) }
+        drawCaption(below: b.centerY + b.height / 2 + 7, text: S.mainsShort.v(Settings.shared.lang))
     }
 
     private func bandRect(_ b: Band) -> NSRect {
