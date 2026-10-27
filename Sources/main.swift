@@ -215,27 +215,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if !ok { fails += 1 }
                 print("\(ok ? "✓" : "✗") \(name): \(String(format: "%.2f", got)) (期望 \(String(format: "%.2f", want)))")
             }
-            // 1. 60W 快充：SMC 读到墙插 55.6、电池吃 44.3 → 系统应剩 11.3
-            let w1 = PowerMath.pickWall(smc: 55.6, telemetry: 0, plugged: true, system: 10.5, battery: 44.3, draining: false)
-            near("快充·墙插", w1, 55.6)
-            near("快充·系统", PowerMath.pickSystem(wall: w1, battery: 44.3, draining: false, plugged: true, measured: 10.5, hasBattery: true), 11.3)
-            // 2. 遥测停更 + SMC 读不到：不能是 0，要拼成 系统 + 电池
-            let w2 = PowerMath.pickWall(smc: nil, telemetry: 0, plugged: true, system: 10.5, battery: 44.3, draining: false)
-            near("遥测停更·墙插", w2, 54.8)
-            // 3. 弱充电器：充电器 2.4W，电池再出 6.8W，系统共 9.2W
-            let w3 = PowerMath.pickWall(smc: 2.4, telemetry: 2.4, plugged: true, system: 9.2, battery: 6.8, draining: true)
-            near("补充供电·墙插", w3, 2.4)
-            near("补充供电·系统", PowerMath.pickSystem(wall: w3, battery: 6.8, draining: true, plugged: true, measured: 9.2, hasBattery: true), 9.2)
-            // 4. 没插电：墙插 0，系统看实测
-            let w4 = PowerMath.pickWall(smc: 0, telemetry: 0, plugged: false, system: 11.3, battery: 8.9, draining: true)
-            near("放电·墙插", w4, 0)
-            near("放电·系统=电池", PowerMath.pickSystem(wall: w4, battery: 8.9, draining: true, plugged: false, measured: 11.3, hasBattery: true), 8.9)
-            // 5. 满电涓流：墙插几乎全给系统
-            near("涓流·系统", PowerMath.pickSystem(wall: 15.7, battery: 0.1, draining: false, plugged: true, measured: 15.6, hasBattery: true), 15.6)
-            near("台式机·系统", PowerMath.pickSystem(wall: 0, battery: 0, draining: false, plugged: true, measured: 17.2, hasBattery: false), 17.2)
-            // 6. SMC 读到 0.9W（低于可信线）+ 遥测也是 0：退回拼装，不能显示 0.9
-            let w6 = PowerMath.pickWall(smc: 0.9, telemetry: 0, plugged: true, system: 10.0, battery: 2.0, draining: false)
-            near("弱信号·墙插", w6, 12.0)
+            // 1. 电池取数：顶层可信就用顶层；顶层缺了才用 Amperage×Voltage
+            near("电池·顶层优先", PowerMath.pickBattery(top: 44.3, ampereVolt: 10.0, telemetry: 21.3) ?? -1, 44.3)
+            near("电池·缺顶层回退", PowerMath.pickBattery(top: nil, ampereVolt: 10.01, telemetry: 21.3) ?? -1, 10.01)
+            // 2. 遥测溢出（uint64 回绕成 1.8e16）和 NaN 必须当没读到，不能画到界面上
+            near("遥测溢出·丢弃", PowerMath.pickBattery(top: nil, ampereVolt: nil, telemetry: 1.8446744e16) ?? -1, -1)
+            near("负 PSTR·丢弃", PowerMath.sanePositive(-4.3) ?? -1, -1)
+            near("超量程·丢弃", PowerMath.sane(1.8e16) ?? -1, -1)
+
+            // 3. 充电方向：实测 43% 插着 30W 头，IsCharging=0 但电流 +6.3W
+            near("方向·flag=0 但电流为正", PowerMath.chargeState(signedBatteryW: 6.3, flag: false).charging ? 1 : 0, 1)
+            near("方向·电流为负 仍在放", PowerMath.chargeState(signedBatteryW: -6.3, flag: true).draining ? 1 : 0, 1)
+            near("方向·电流为负 不算充", PowerMath.chargeState(signedBatteryW: -6.3, flag: true).charging ? 1 : 0, 0)
+            near("方向·满电涓流 flag=1", PowerMath.chargeState(signedBatteryW: 0.1, flag: true).charging ? 1 : 0, 1)
+            near("方向·满电静置", PowerMath.chargeState(signedBatteryW: 0.1, flag: false).charging ? 1 : 0, 0)
+
+            // 4. 墙插恒等式：墙插 = 系统 + 电池，永远对得上（PDTR 只是兜底）
+            near("恒等·插电", PowerMath.pickWall(contract: 27.9, telemetry: 25.7, plugged: true,
+                                                system: 6.1, battery: 12.6, draining: false), 18.7)
+            near("恒等·补充供电", PowerMath.pickWall(contract: 2.4, telemetry: 2.4, plugged: true,
+                                                 system: 9.2, battery: 6.8, draining: true), 2.4)
+            near("恒等·放电墙插为 0", PowerMath.pickWall(contract: 0, telemetry: 0, plugged: false,
+                                                    system: 8.9, battery: 8.9, draining: true), 0)
+            near("恒等·系统全读不到退回合约值", PowerMath.pickWall(contract: 27.9, telemetry: 25.7, plugged: true,
+                                                          system: 0, battery: 0, draining: false), 27.9)
             print(fails == 0 ? "全部通过" : "\(fails) 项不符")
             exit(fails == 0 ? 0 : 1)
         }

@@ -29,11 +29,14 @@ struct PowerSnapshot {
     var timestamp = Date()
 
 
-    /// 系统功耗。插着电时取「墙插 − 电池」的残差，保证图里 墙插 = 系统 + 电池 永远对得上；
-    /// PSTR 是瞬时采样，编译这种负载下会比残差高 6W，三条数并排就自相矛盾了。
+    /// 系统功耗。直接信 PSTR（实测随负载 6W→23W，整机口径），
+    /// 墙插反过来由它推出（wall = 系统 + 电池），所以三个数永远自洽。
+    /// 早先用「墙插 − 电池」的残差当系统：电池的 SBS 每 30 秒才更新一次、
+    /// 一跳 10W，残差就跟着跳 10W，看着像数据源坏了。
     var systemUsageW: Double {
-        PowerMath.pickSystem(wall: wallW, battery: batteryW, draining: batteryDraining,
-                             plugged: isPluggedIn, measured: systemLoadW, hasBattery: hasBattery)
+        if systemLoadW > 0.2 { return systemLoadW }
+        if hasBattery { return batteryW }      // PSTR 读不到：放电时电池就是系统
+        return 0
     }
     var batteryChargeW: Double { isCharging ? batteryW : 0 }
     var batteryDischargeW: Double { isCharging ? 0 : batteryW }
@@ -48,6 +51,8 @@ struct PowerSnapshot {
         return .charging          // 插着但静置（电量满、没有净流入）
     }
     var statusTextKey: Tri {
+        // 100% 还在涓流：macOS 会报 IsCharging=1，但它已经满了
+        if isCharging && percent >= 100 && batteryW < 1 { return S.full }
         if isCharging { return S.charging }
         if flowMode == .supplementing { return S.supplementShort }
         if isPluggedIn { return percent >= 99 ? S.full : S.plugged }
@@ -211,28 +216,28 @@ final class Sampler {
         //   电池 = 顶层 BatteryPower（正充负放）→ Amperage×Voltage → 遥测
         //   系统 = SMC PSTR → 遥测 SystemLoad
         //   墙插 = SMC PDTR → 遥测 SystemPowerIn → 系统 ± 电池
-        let battTop = (dict["BatteryPower"] as? NSNumber)?.int64Value ?? 0
         let amp = (dict["Amperage"] as? NSNumber)?.doubleValue ?? 0
         let volt = (dict["Voltage"] as? NSNumber)?.doubleValue ?? 0
-        var battMW = Double(battTop)
-        if abs(battMW) < 200 { battMW = amp * volt / 1000 }              // mW，两者都带符号
-        if abs(battMW) < 200 {
-            let raw = (tel["BatteryPower"] as? NSNumber)?.uint64Value ?? 0
-            battMW = Double(Int64(bitPattern: raw))
-        }
-        snap.batteryW = abs(battMW) / 1000
-        snap.batteryDraining = battMW < 0     // 负值 = 电池在放电
+        let battTopW = (dict["BatteryPower"] as? NSNumber).map { $0.doubleValue / 1000 }
+        let battAmpW: Double? = (amp != 0 && volt != 0) ? amp * volt / 1_000_000 : nil
+        // 遥测这块可能整块停更、也可能溢出（uint64 回绕成 1.8e16），所以放最后一级
+        let telRaw = (tel["BatteryPower"] as? NSNumber)?.uint64Value
+        let battTelW = telRaw.map { Double(Int64(bitPattern: $0)) / 1000 }
+        let signedBatW = PowerMath.pickBattery(top: battTopW, ampereVolt: battAmpW, telemetry: battTelW) ?? 0
+
+        let state = PowerMath.chargeState(signedBatteryW: signedBatW,
+                                          flag: dict["IsCharging"] as? Bool ?? false)
+        snap.isCharging = state.charging
+        snap.batteryDraining = state.draining
+        snap.batteryW = abs(signedBatW)
         snap.adapterLossW = telMW("AdapterEfficiencyLoss") / 1000
         snap.isPluggedIn = dict["ExternalConnected"] as? Bool ?? false
-        // IsCharging 只说明"充电器在线"，电池实际可能在放电（充电器功率不够或电量已满）
-        snap.isCharging = (dict["IsCharging"] as? Bool ?? false) && !snap.batteryDraining
 
-        let smcSys = SMCPower.read("PSTR")?.value
-        let smcWall = SMCPower.read("PDTR")?.value
-        if let s = smcSys, s > 0.5 { snap.systemLoadW = s } else { snap.systemLoadW = telMW("SystemLoad") / 1000 }
-        snap.wallW = PowerMath.pickWall(smc: smcWall, telemetry: telMW("SystemPowerIn") / 1000,
-                                        plugged: snap.isPluggedIn, system: snap.systemLoadW,
-                                        battery: snap.batteryW, draining: snap.batteryDraining)
+        // 系统功耗：PSTR（实测随 CPU 负载 6W→23W，是整机口径）。
+        // 它偶发报 -4.3W / 瞬时尖峰，读不到就沿用上一次的好值，别退回慢半拍的遥测
+        if let p = PowerMath.sanePositive(SMCPower.read("PSTR")?.value) { lastSystemW = p }
+        let telLoad = PowerMath.sanePositive(telMW("SystemLoad") / 1000)
+        snap.systemLoadW = lastSystemW ?? telLoad ?? 0
         snap.percent = (dict["CurrentCapacity"] as? NSNumber)?.intValue ?? 0
         snap.cycleCount = (dict["CycleCount"] as? NSNumber)?.intValue ?? 0
         snap.timeToFull = (dict["AvgTimeToFull"] as? NSNumber)?.intValue ?? 0
@@ -250,16 +255,37 @@ final class Sampler {
         snap.notChargingReason = (cd["NotChargingReason"] as? NSNumber)?.intValue ?? 0
         snap.thermallyLimited = (cd["TimeChargingThermallyLimited"] as? NSNumber)?.intValue ?? 0
 
-        // 移动平均，避免数字乱跳
-        snap.wallW = sm.smooth("wall", snap.wallW)
-        snap.systemLoadW = sm.smooth("load", snap.systemLoadW)
-        snap.batteryW = sm.smooth("bat", snap.batteryW)
+        // 平滑：系统跟负载要快（0.55），电池的 SBS 30 秒才更新一次、一跳 10W，
+        // 慢了才能在界面上走成斜坡而不是台阶
+        if !snap.isPluggedIn || lastPlugged != snap.isPluggedIn { sm.reset() }
+        lastPlugged = snap.isPluggedIn
+        snap.systemLoadW = sm.smooth("sys", snap.systemLoadW)
+        snap.batteryW = sm.smooth("bat", snap.batteryW, alpha: 0.3)
+        // 墙插放在最后：它就是系统 + 电池，三个数摆一起永远对得上
+        snap.wallW = PowerMath.pickWall(contract: SMCPower.read("PDTR")?.value,
+                                        telemetry: telMW("SystemPowerIn") / 1000,
+                                        plugged: snap.isPluggedIn,
+                                        system: snap.systemLoadW,
+                                        battery: snap.batteryW,
+                                        draining: snap.batteryDraining)
+
+        // 充满时间自己算：系统给的 AvgTimeToFull 在"没在充"时是垃圾（和 TimeRemaining 同值，
+        // 实测 43% 充着电却报 235 分钟）。剩余容量 ÷ 当前功率更实在
+        let cellV = volt / 1000
+        if snap.isCharging, snap.batteryW > 0.5, snap.fullCapacity > snap.currentCapacity, cellV > 5 {
+            let wh = Double(snap.fullCapacity - snap.currentCapacity) * cellV / 1000
+            snap.timeToFull = max(Int((wh / snap.batteryW * 60).rounded()), 1)
+        } else if !snap.isCharging && !snap.batteryDraining {
+            snap.timeToFull = 0
+        }
 
         let adapter = snap.isPluggedIn ? AdapterInfo.parse(dict["AdapterDetails"]) : nil
         return (snap, adapter)
     }
 
-    private let sm = Smoother(window: 8)
+    private let sm = Smoother()
+    private var lastSystemW: Double?      // PSTR 上一次的好值，坏样本时沿用
+    private var lastPlugged: Bool?        // 插拔瞬间重置平滑，免得从旧值慢慢爬
     private var lastTemp: Double = 0
 
     private static func packTemperature() -> Double? {
@@ -411,18 +437,20 @@ final class Sampler {
 
 // MARK: - 平滑
 
+/// 指数平滑。原来用 8 点均值：一个坏样本要拖满 16 秒才走干净；
+/// 而电池的 SBS 每 30 秒才更新一次、一跳就是 10W，均值法在台阶前后各拖一半。
 final class Smoother {
-    private var buckets: [String: [Double]] = [:]
-    private let window: Int
-    init(window: Int) { self.window = window }
-    func smooth(_ key: String, _ v: Double) -> Double {
-        var arr = buckets[key] ?? []
-        arr.append(v)
-        if arr.count > window { arr.removeFirst(arr.count - window) }
-        buckets[key] = arr
-        return arr.reduce(0, +) / Double(arr.count)
+    private var state: [String: Double] = [:]
+    private let alpha: Double
+    init(alpha: Double = 0.55) { self.alpha = alpha }
+    func smooth(_ key: String, _ v: Double, alpha: Double? = nil) -> Double {
+        guard let last = state[key] else { state[key] = v; return v }
+        let a = alpha ?? self.alpha
+        let next = last + (v - last) * a
+        state[key] = next
+        return next
     }
-    func reset() { buckets.removeAll() }
+    func reset() { state.removeAll() }
 }
 
 // MARK: - 适配器解析
@@ -540,12 +568,46 @@ extension AdapterInfo {
 
 // 三个数怎么合成，抽成纯函数：没有真机也能断言（2.1.4 那次快充 0 W 就是这里出的）
 enum PowerMath {
-    /// 墙插功率：SMC → 遥测 → 系统 ± 电池
-    static func pickWall(smc: Double?, telemetry: Double, plugged: Bool,
+    /// 这个瓦数可不可信。遥测块的 BatteryPower 会 uint64 回绕成 1.8e16，
+    /// 顶层键偶尔也会缺，不挡在门口就会画出"18446744073709548 W"。
+    static func sane(_ v: Double?, limit: Double = 200) -> Double? {
+        guard let v, v.isFinite, abs(v) <= limit else { return nil }
+        return v
+    }
+
+    /// 正数才算读到了（PSTR 实测会蹦出 -4.3 W 这种负值）
+    static func sanePositive(_ v: Double?, limit: Double = 200) -> Double? {
+        guard let v = sane(v, limit: limit), v > 0.2 else { return nil }
+        return v
+    }
+
+    /// 电池功率（带符号，正 = 往电池里灌）。三级回退，每一级都要过校验
+    static func pickBattery(top: Double?, ampereVolt: Double?, telemetry: Double?) -> Double? {
+        for c in [top, ampereVolt, telemetry] {
+            if let v = sane(c) { return v }
+        }
+        return nil
+    }
+
+    /// 充/放电方向。电流符号比 IsCharging 可靠：插着 30W 头充到 43% 时
+    /// 系统照样报 IsCharging=0，但电流是 +865mA（确实在充），按 flag 画就把方向画反了。
+    static func chargeState(signedBatteryW: Double, flag: Bool) -> (charging: Bool, draining: Bool) {
+        let draining = signedBatteryW < -0.5
+        let charging = signedBatteryW > 0.5 || (flag && !draining)
+        return (charging, draining)
+    }
+
+    /// 墙插功率：插着电就是「系统 + 电池」，三个数永远自洽。
+    /// PDTR 不是实时读数——实测 19.6V×1.425A=27.9W，加不加 CPU 负载都不动，
+    /// 它是 PD 合约值，只能当兜底。
+    static func pickWall(contract: Double?, telemetry: Double?, plugged: Bool,
                          system: Double, battery: Double, draining: Bool) -> Double {
-        if plugged, let s = smc, s > 1 { return s }
-        if telemetry > 0.5 || !plugged { return telemetry }
-        return max(system + (draining ? -battery : battery), 0)
+        guard plugged else { return 0 }
+        let sum = system + (draining ? -battery : battery)
+        if system > 0.2, sum > 0.3 { return sum }
+        if let c = sane(contract, limit: 400) { return c }
+        if let t = sane(telemetry, limit: 400) { return t }
+        return max(sum, 0)
     }
 
     /// 系统功耗：插电时取「墙插 − 电池」的残差，保证 墙插 = 系统 + 电池。
