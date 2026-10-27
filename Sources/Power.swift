@@ -34,8 +34,11 @@ struct PowerSnapshot {
     /// 早先用「墙插 − 电池」的残差当系统：电池的 SBS 每 30 秒才更新一次、
     /// 一跳 10W，残差就跟着跳 10W，看着像数据源坏了。
     var systemUsageW: Double {
+        // 没插电时电池就是唯一来源：系统功耗直接等于电池输出，
+        // 否则 PSTR（DC-DC 之后，比电池端低 1~3W）和电池卡并排又"对不上"
+        if !isPluggedIn && hasBattery { return batteryW }
         if systemLoadW > 0.2 { return systemLoadW }
-        if hasBattery { return batteryW }      // PSTR 读不到：放电时电池就是系统
+        if hasBattery { return batteryW }
         return 0
     }
     var batteryChargeW: Double { isCharging ? batteryW : 0 }
