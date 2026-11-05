@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="{{html_lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>{{t:title}}</title>
+<meta name="description" content="{{t:meta_desc}}">
+<meta property="og:title" content="{{t:title}}">
+<meta property="og:description" content="{{t:meta_desc}}">
+<meta property="og:image" content="https://powerpulse.qijunhao.xyz/img/og.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="{{prefix}}img/favicon.png" sizes="32x32">
+<link rel="apple-touch-icon" href="{{prefix}}img/appicon.png">
+<link rel="stylesheet" href="{{prefix}}assets/site.css">
+</head>
+<body>
+<a class="skip" href="#panels">{{t:skip}}</a>
+
+<nav class="nav"><div class="wrap nav-in">
+  <a class="brand" href="{{home}}"><img src="{{prefix}}img/appicon.png" alt=""><span>PowerPulse</span></a>
+  <div class="nav-links"><a href="#panels">{{t:nav_panels}}</a><a href="#anatomy">{{t:nav_anatomy}}</a><a href="#features">{{t:nav_features}}</a><a href="#specs">{{t:nav_inside}}</a></div>
+  <div class="nav-actions">
+    {{lang_switch}}
+    <a class="btn btn-ghost nav-dl" href="https://github.com/777cola/PowerPulse/releases/latest">{{t:nav_dl}}</a>
+  </div>
+</div></nav>
+
+<header class="wrap hero">
+  <div>
+    <span class="eyebrow"><i class="dot"></i>{{t:eyebrow}}</span>
+    <h1><span class="ln">{{t:h1_1}}</span><span class="ln"><em>{{t:h1_2}}</em></span></h1>
+    <p class="hero-sub">{{t:hero_sub}}</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="https://github.com/777cola/PowerPulse/releases/latest">{{t:cta_dl}}</a>
+      <a class="btn btn-ghost" href="https://github.com/777cola/PowerPulse">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        {{t:cta_src}}</a>
+    </div>
+    <div class="chips"><span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>{{t:chip1}}</span><span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>{{t:chip2}}</span><span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>{{t:chip3}}</span></div>
+  </div>
+  <div class="visual">
+    <div class="menubar">
+      <span class="apple"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.8a15 15 0 0 1 20 0"/><path d="M5.5 12.3a10 10 0 0 1 13 0"/><path d="M9 15.8a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="8" width="17" height="8" rx="2"/><path d="M21 11v2"/><rect x="4" y="10" width="12" height="4" rx="1" fill="currentColor" stroke="none"/></svg>
+      <span class="spacer"></span>
+      <img src="{{prefix}}img/statusitem.png" alt="PowerPulse menu bar item">
+    </div>
+    <div class="shot"><img src="{{prefix}}img/panel-flow{{img_suffix}}.png" alt="PowerPulse power flow panel" width="640" height="932"></div>
+    <div class="caption"><span>{{t:cap_left}}</span><span>{{t:cap_right}}</span></div>
+  </div>
+</header>
+
+<main>
+<section class="sec" id="panels"><div class="wrap">
+  <div class="sec-head"><span class="num">01</span><div><h2>{{t:s1_h2}}</h2><p>{{t:s1_p}}</p></div></div>
+  <div class="tabs"><input type="radio" name="panel" id="p1" checked><input type="radio" name="panel" id="p2"><input type="radio" name="panel" id="p3"><input type="radio" name="panel" id="p4"><input type="radio" name="panel" id="p5">
+    <div class="tabs-bar"><label for="p1">{{t:tab_a}}</label><label for="p2">{{t:tab_b}}</label><label for="p3">{{t:tab_c}}</label><label for="p4">{{t:tab_d}}</label><label for="p5">{{t:tab_e}}</label></div>
+    <div class="tabs-body">
+        <article class="tab-p" data-i="1">
+          <figure class="tab-shot"><img src="{{prefix}}img/panel-flow{{img_suffix}}.png" width="640" height="932"
+            alt="{{t:tab_a}}" loading="eager"></figure>
+          <div class="tab-copy">
+            <h3>{{t:t1_h3}}</h3>
+            <p>{{t:t1_p}}</p>
+            <ul class="facts"><li>{{t:t1_f1}}</li><li>{{t:t1_f2}}</li><li>{{t:t1_f3}}</li></ul>
+          </div>
+        </article>
+        <article class="tab-p" data-i="2">
+          <figure class="tab-shot"><img src="{{prefix}}img/panel-monitor{{img_suffix}}.png" width="640" height="932"
+            alt="{{t:tab_b}}" loading="lazy"></figure>
+          <div class="tab-copy">
+            <h3>{{t:t2_h3}}</h3>
+            <p>{{t:t2_p}}</p>
+            <ul class="facts"><li>{{t:t2_f1}}</li><li>{{t:t2_f2}}</li><li>{{t:t2_f3}}</li></ul>
+          </div>
+        </article>
+        <article class="tab-p" data-i="3">
+          <figure class="tab-shot"><img src="{{prefix}}img/panel-history{{img_suffix}}.png" width="640" height="932"
+            alt="{{t:tab_c}}" loading="lazy"></figure>
+          <div class="tab-copy">
+            <h3>{{t:t3_h3}}</h3>
+            <p>{{t:t3_p}}</p>
+            <ul class="facts"><li>{{t:t3_f1}}</li><li>{{t:t3_f2}}</li><li>{{t:t3_f3}}</li></ul>
+          </div>
+        </article>
+        <article class="tab-p" data-i="4">
+          <figure class="tab-shot"><img src="{{prefix}}img/panel-adapter{{img_suffix}}.png" width="640" height="932"
+            alt="{{t:tab_d}}" loading="lazy"></figure>
+          <div class="tab-copy">
+            <h3>{{t:t4_h3}}</h3>
+            <p>{{t:t4_p}}</p>
+            <ul class="facts"><li>{{t:t4_f1}}</li><li>{{t:t4_f2}}</li><li>{{t:t4_f3}}</li></ul>
+          </div>
+        </article>
+        <article class="tab-p" data-i="5">
+          <figure class="tab-shot"><img src="{{prefix}}img/panel-settings{{img_suffix}}.png" width="640" height="932"
+            alt="{{t:tab_e}}" loading="lazy"></figure>
+          <div class="tab-copy">
+            <h3>{{t:t5_h3}}</h3>
+            <p>{{t:t5_p}}</p>
+            <ul class="facts"><li>{{t:t5_f1}}</li><li>{{t:t5_f2}}</li><li>{{t:t5_f3}}</li></ul>
+          </div>
+        </article></div>
+  </div>
+</div></section>
+
+<section class="sec" id="anatomy"><div class="wrap">
+  <div class="sec-head"><span class="num">02</span><div><h2>{{t:s2_h2}}</h2><p>{{t:s2_p}}</p></div></div>
+  <div class="anatomy">
+    <iframe id="pb" src="{{prefix}}assets/powerbench.html?embed=1" title="PowerPulse anatomy" loading="lazy" height="880" scrolling="no"></iframe>
+    <div class="anatomy-foot"><span>{{t:fig_cap}}</span><a href="{{prefix}}assets/powerbench.html">{{t:fig_open}}</a></div>
+  </div>
+  <div class="keys"><div class="key"><i class="k1"></i><span>{{t:key1}}</span></div><div class="key"><i class="k2"></i><span>{{t:key2}}</span></div><div class="key"><i class="k3"></i><span>{{t:key3}}</span></div></div>
+</div></section>
+
+<section class="sec" id="features"><div class="wrap">
+  <div class="sec-head"><span class="num">03</span><div><h2>{{t:s3_h2}}</h2><p>{{t:s3_p}}</p></div></div>
+  <div class="bento"><div class="cell w3 tint"><h3>{{t:b1_h3}}</h3><p>{{t:b1_p}}</p><div class="tick"><b>1 s</b><span>·</span><span>{{t:b1_tick}}</span></div></div><div class="cell w3"><h3>{{t:b2_h3}}</h3><p>{{t:b2_p}}</p><div class="pill-row"><span class="pill">5V · 3A</span><span class="pill">9V · 3A</span><span class="pill">12V · 3A</span><span class="pill">15V · 3A</span><span class="pill now">20V · 3A</span></div></div><div class="cell w2"><h3>{{t:b3_h3}}</h3><p>{{t:b3_p}}</p><div class="bar"><i></i></div><div class="tick"><b>92.9%</b><span>·</span><span>{{t:b3_tick}}</span></div></div><div class="cell w2"><h3>{{t:b4_h3}}</h3><p>{{t:b4_p}}</p></div><div class="cell w2"><h3>{{t:b5_h3}}</h3><p>{{t:b5_p}}</p></div></div>
+</div></section>
+
+<section class="sec" id="specs"><div class="wrap">
+  <div class="sec-head"><span class="num">04</span><div><h2>{{t:s4_h2}}</h2><p>{{t:s4_p}}</p></div></div>
+  <div class="specs">
+    <div class="rows-wrap"><div class="rows-head"><span>{{t:rows_h1}}</span><span>{{t:rows_h2}}</span></div><dl class="rows"><div><dt>{{t:r1_dt}}</dt><dd>{{t:r1_dd}}</dd></div><div><dt>{{t:r2_dt}}</dt><dd>{{t:r2_dd}}</dd></div><div><dt>{{t:r3_dt}}</dt><dd>{{t:r3_dd}}</dd></div><div><dt>{{t:r4_dt}}</dt><dd>{{t:r4_dd}}</dd></div><div><dt>{{t:r5_dt}}</dt><dd>{{t:r5_dd}}</dd></div><div><dt>{{t:r6_dt}}</dt><dd>{{t:r6_dd}}</dd></div></dl></div>
+    <div class="side">
+      <h3>{{t:side_h3}}</h3>
+      <dl><div><dt>{{t:side_dt1}}</dt><dd>0.4%</dd></div><div><dt>{{t:side_dt2}}</dt><dd>21 MB</dd></div><div><dt>{{t:side_dt3}}</dt><dd>6%</dd></div><div><dt>{{t:side_dt4}}</dt><dd>1 s</dd></div></dl>
+      <p class="note">{{t:side_note}}</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="download"><div class="wrap">
+  <div class="dl">
+    <img src="{{prefix}}img/appicon.png" alt="PowerPulse icon">
+    <div><h2>{{t:dl_h2}}</h2><p>{{t:dl_p}}</p><div class="meta"><span>v2.1.7</span><span>.zip</span><span>683 KB</span><span>macOS 14.0+</span><span>Apple Silicon</span><span>MIT</span></div><p class="dl-note">{{t:dl_note}}</p>
+      <div class="dl-cmd"><span>{{t:dl_cmd}}</span><code>curl -fsSL https://powerpulse.qijunhao.xyz/install.sh | bash</code></div></div>
+    <div class="dl-cta">
+      <a class="btn btn-primary" href="https://github.com/777cola/PowerPulse/releases/latest">{{t:dl_btn}}</a>
+    </div>
+  </div>
+  <details class="build" id="build" open>
+    <summary>{{t:build_summary}}</summary>
+    <pre><span class="c">{{t:build_c1}}</span>
+git clone https://github.com/777cola/PowerPulse.git
+cd PowerPulse &amp;&amp; ./build_app.sh
+<span class="c">{{t:build_c2}}</span></pre>
+  </details>
+</div></section>
+</main>
+
+<footer class="foot"><div class="wrap foot-in">
+  <a class="brand" href="{{home}}"><img src="{{prefix}}img/appicon.png" alt=""><span>PowerPulse</span></a>
+  <span>© 2026 AutumnPants · PowerPulse</span>
+  <div class="foot-links"><a href="https://github.com/777cola/PowerPulse">GitHub</a><a href="https://github.com/777cola/PowerPulse/issues">{{t:foot_feedback}}</a><a href="https://github.com/777cola/PowerPulse/blob/main/LICENSE">MIT</a></div>
+</div></footer>
+
+<script>
+(function(){
+  var f=document.getElementById('pb');
+  addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='pb-height')return;
+    var h=Math.max(420,Math.min(1200,Math.round(e.data.h)+2));
+    if(Math.abs(f.getBoundingClientRect().height-h)>3)f.style.height=h+'px';
+  });
+})();
+</script>
+</body>
+</html>
