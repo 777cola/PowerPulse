@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""模板 + 三语文案 → 三个页面（简 / 繁(粵) / EN）。
+"""模板 + 三语文案 → 三个页面（简 / 繁 / EN）。
 
-繁体页 = 繁体字 + 粤语写法；粤语本来就是繁体，不再单列一个语言位。
+繁体页 = 繁体字 + 粤语写法；粤语就是繁体，不单列语言位，切换器只写「繁 繁體中文」。
 用法：python3 site-src/render.py
 """
 import os
@@ -19,14 +19,14 @@ tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
 PAGES = {
     "zh":   dict(html_lang="zh-CN", content="zh", prefix="", home="index.html", out="index.html",
                  urls=dict(zh="index.html", hant="zh-hant/index.html", en="en/index.html")),
-    "hant": dict(html_lang="yue", content="yue", prefix="../", home="../index.html", out="zh-hant/index.html",
+    "hant": dict(html_lang="zh-Hant", content="yue", prefix="../", home="../index.html", out="zh-hant/index.html",
                  urls=dict(zh="../index.html", hant="index.html", en="../en/index.html")),
     "en":   dict(html_lang="en", content="en", prefix="../", home="../index.html", out="en/index.html",
                  urls=dict(zh="../index.html", hant="../zh-hant/index.html", en="index.html")),
 }
 
 SWITCH = [("zh", "简", "简体中文", 'lang="zh-CN"'),
-          ("hant", "繁(粵)", "繁體中文", 'lang="yue"'),
+          ("hant", "繁", "繁體中文", 'lang="zh-Hant"'),
           ("en", "EN", "English", 'lang="en"')]
 
 

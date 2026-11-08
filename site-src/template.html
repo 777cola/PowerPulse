@@ -167,5 +167,23 @@ cd PowerPulse &amp;&amp; ./build_app.sh
   });
 })();
 </script>
+
+<!-- 语言切换：先播完胶囊展开动画，再跳转（三个语言是三张静态页） -->
+<script>
+(function(){
+  var links = document.querySelectorAll('.lang a');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  links.forEach(function(a){
+    a.addEventListener('click', function(e){
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      if (a.classList.contains('on')) return;
+      links.forEach(function(x){ x.classList.remove('on'); });
+      a.classList.add('on');
+      setTimeout(function(){ location.href = a.href; }, reduce ? 0 : 280);
+    });
+  });
+})();
+</script>
 </body>
 </html>

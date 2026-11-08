@@ -21,7 +21,7 @@
   <a class="brand" href="../index.html"><img src="../img/appicon.png" alt=""><span>PowerPulse</span></a>
   <div class="nav-links"><a href="#panels">Panels</a><a href="#anatomy">Anatomy</a><a href="#features">Features</a><a href="#specs">Inside</a></div>
   <div class="nav-actions">
-    <div class="lang"><a class="" href="../index.html" lang="zh-CN"><span class="abbr">简</span><span class="full"><span>简体中文</span></span></a><a class="" href="../zh-hant/index.html" lang="yue"><span class="abbr">繁(粵)</span><span class="full"><span>繁體中文</span></span></a><a class="on" href="index.html" lang="en" aria-current="page"><span class="abbr">EN</span><span class="full"><span>English</span></span></a></div>
+    <div class="lang"><a class="" href="../index.html" lang="zh-CN"><span class="abbr">简</span><span class="full"><span>简体中文</span></span></a><a class="" href="../zh-hant/index.html" lang="zh-Hant"><span class="abbr">繁</span><span class="full"><span>繁體中文</span></span></a><a class="on" href="index.html" lang="en" aria-current="page"><span class="abbr">EN</span><span class="full"><span>English</span></span></a></div>
     <a class="btn btn-ghost nav-dl" href="https://github.com/777cola/PowerPulse/releases/latest">Download</a>
   </div>
 </div></nav>
@@ -164,6 +164,24 @@ cd PowerPulse &amp;&amp; ./build_app.sh
     if(!e.data||e.data.type!=='pb-height')return;
     var h=Math.max(420,Math.min(1200,Math.round(e.data.h)+2));
     if(Math.abs(f.getBoundingClientRect().height-h)>3)f.style.height=h+'px';
+  });
+})();
+</script>
+
+<!-- 语言切换：先播完胶囊展开动画，再跳转（三个语言是三张静态页） -->
+<script>
+(function(){
+  var links = document.querySelectorAll('.lang a');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  links.forEach(function(a){
+    a.addEventListener('click', function(e){
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      if (a.classList.contains('on')) return;
+      links.forEach(function(x){ x.classList.remove('on'); });
+      a.classList.add('on');
+      setTimeout(function(){ location.href = a.href; }, reduce ? 0 : 280);
+    });
   });
 })();
 </script>

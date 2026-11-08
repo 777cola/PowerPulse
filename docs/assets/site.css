@@ -40,14 +40,14 @@ a{color:inherit;text-decoration:none}
 .nav-links a:hover::after{right:0}
 .nav-actions{display:flex;align-items:center;gap:12px;margin-left:20px}
 .lang{display:flex;align-items:center;justify-content:center;gap:2px;
-  width:196px;border:1px solid var(--line);border-radius:999px;
+  width:168px;border:1px solid var(--line);border-radius:999px;
   padding:3px;background:#fff;font-size:12.5px;box-shadow:var(--shadow-s)}
 /* 当前语言展开全称：简 → 简 简体中文，外框定宽，导航不会被推着走 */
 .lang a{display:inline-flex;align-items:center;justify-content:center;height:24px;
   padding:0 7px;border-radius:999px;color:var(--muted);transition:.16s ease;line-height:1;white-space:nowrap}
 .lang a .full{display:grid;grid-template-columns:0fr;padding-left:0;
-  transition:grid-template-columns .42s cubic-bezier(.22,1,.36,1),padding-left .42s cubic-bezier(.22,1,.36,1)}
-.lang a .full > span{overflow:hidden;white-space:nowrap;opacity:0;transition:opacity .22s .1s}
+  transition:grid-template-columns .3s cubic-bezier(.22,1,.36,1),padding-left .3s cubic-bezier(.22,1,.36,1)}
+.lang a .full > span{overflow:hidden;white-space:nowrap;opacity:0;transition:opacity .16s .06s}
 .lang a.on{background:var(--blue);color:#fff;font-weight:600;padding:0 10px}
 .lang a.on .full{grid-template-columns:1fr;padding-left:5px}
 .lang a.on .full > span{opacity:1}
@@ -72,7 +72,7 @@ h1{margin:20px 0 0;font-size:clamp(38px,4.6vw,60px);line-height:1.02;letter-spac
   font-weight:680;text-wrap:balance}
 h1 em{font-style:normal;color:var(--blue)}
 h1 .ln{display:block}
-html[lang^="zh"] h1 .ln,html[lang="yue"] h1 .ln{white-space:nowrap}
+html[lang^="zh"] h1 .ln{white-space:nowrap}
 html[lang=en] h1{font-size:clamp(32px,3.9vw,50px)}
 .nav-dl{padding:7px 15px;font-size:13.5px}
 .hero-sub{margin:18px 0 0;max-width:31em;color:var(--ink2);font-size:clamp(15px,1.15vw,16.5px);line-height:1.68}
@@ -244,7 +244,7 @@ pre .c{color:#7f93ad}
   .wrap{width:calc(100% - 32px)}
   .nav-in{gap:12px}
   .nav-dl{display:none}
-  .lang{width:182px;padding:3px;font-size:12px;gap:1px}
+  .lang{width:152px;padding:3px;font-size:12px;gap:1px}
   .lang a{height:26px;padding:0 6px}
   .lang a.on{padding:0 8px}
   .lang a.on .full{padding-left:4px}
@@ -263,7 +263,7 @@ pre .c{color:#7f93ad}
 }
 @media (max-width:360px){
   .brand{font-size:13px}
-  .lang{width:166px;font-size:10.5px}
+  .lang{width:138px;font-size:10.5px}
   .lang a{height:24px;padding:0 5px}
   .lang a.on{padding:0 7px}
 }
