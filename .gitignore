@@ -3,3 +3,4 @@ build/
 PowerPulse.app/
 *.dmg
 .DS_Store
+__pycache__/
