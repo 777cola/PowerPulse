@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""模板 + 四语文案 → 四个页面。"""
+"""模板 + 三语文案 → 三个页面（简 / 繁(粵) / EN）。
+
+繁体页 = 繁体字 + 粤语写法；粤语本来就是繁体，不再单列一个语言位。
+用法：python3 site-src/render.py
+"""
 import os
 import re
 import sys
@@ -13,19 +17,16 @@ DOCS = os.path.normpath(os.path.join(HERE, "..", "docs"))
 tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
 
 PAGES = {
-    "zh":   dict(html_lang="zh-CN", prefix="", home="index.html", out="index.html",
-                 urls=dict(zh="index.html", hant="zh-hant/index.html", yue="yue/index.html", en="en/index.html")),
-    "hant": dict(html_lang="zh-TW", prefix="../", home="../index.html", out="zh-hant/index.html",
-                 urls=dict(zh="../index.html", hant="index.html", yue="../yue/index.html", en="../en/index.html")),
-    "yue":  dict(html_lang="yue", prefix="../", home="../index.html", out="yue/index.html",
-                 urls=dict(zh="../index.html", hant="../zh-hant/index.html", yue="index.html", en="../en/index.html")),
-    "en":   dict(html_lang="en", prefix="../", home="../index.html", out="en/index.html",
-                 urls=dict(zh="../index.html", hant="../zh-hant/index.html", yue="../yue/index.html", en="index.html")),
+    "zh":   dict(html_lang="zh-CN", content="zh", prefix="", home="index.html", out="index.html",
+                 urls=dict(zh="index.html", hant="zh-hant/index.html", en="en/index.html")),
+    "hant": dict(html_lang="yue", content="yue", prefix="../", home="../index.html", out="zh-hant/index.html",
+                 urls=dict(zh="../index.html", hant="index.html", en="../en/index.html")),
+    "en":   dict(html_lang="en", content="en", prefix="../", home="../index.html", out="en/index.html",
+                 urls=dict(zh="../index.html", hant="../zh-hant/index.html", en="index.html")),
 }
 
 SWITCH = [("zh", "简", "简体中文", 'lang="zh-CN"'),
-          ("hant", "繁", "繁體中文", 'lang="zh-TW"'),
-          ("yue", "粵", "廣東話", 'lang="yue"'),
+          ("hant", "繁(粵)", "繁體中文", 'lang="yue"'),
           ("en", "EN", "English", 'lang="en"')]
 
 
@@ -49,7 +50,7 @@ for lang, cfg in PAGES.items():
     out = out.replace("{{img_suffix}}", "" if lang == "zh" else "-en")
     out = out.replace("{{lang_switch}}", lang_switch(lang, cfg["urls"]))
     for key in re.findall(r"\{\{t:([a-z0-9_]+)\}\}", out):
-        out = out.replace("{{t:%s}}" % key, K[key][lang])
+        out = out.replace("{{t:%s}}" % key, K[key][cfg["content"]])
     assert "{{" not in out, [m for m in re.findall(r"\{\{[^}]*\}\}", out)][:5]
     path = os.path.join(DOCS, cfg["out"])
     os.makedirs(os.path.dirname(path), exist_ok=True)

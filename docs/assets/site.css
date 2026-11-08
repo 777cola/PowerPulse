@@ -244,7 +244,7 @@ pre .c{color:#7f93ad}
   .wrap{width:calc(100% - 32px)}
   .nav-in{gap:12px}
   .nav-dl{display:none}
-  .lang{width:168px;padding:3px;font-size:12px;gap:1px}
+  .lang{width:182px;padding:3px;font-size:12px;gap:1px}
   .lang a{height:26px;padding:0 6px}
   .lang a.on{padding:0 8px}
   .lang a.on .full{padding-left:4px}
@@ -263,7 +263,7 @@ pre .c{color:#7f93ad}
 }
 @media (max-width:360px){
   .brand{font-size:13px}
-  .lang{width:158px;font-size:11px}
+  .lang{width:166px;font-size:10.5px}
   .lang a{height:24px;padding:0 5px}
   .lang a.on{padding:0 7px}
 }
