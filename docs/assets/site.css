@@ -33,18 +33,22 @@ a{color:inherit;text-decoration:none}
 .brand{display:flex;align-items:center;gap:9px;font-weight:650;letter-spacing:-.015em;font-size:15px}
 .brand img{width:24px;height:24px;border-radius:6px}
 .nav-links{display:flex;gap:22px;margin-left:auto;font-size:14px;color:var(--ink2)}
+/* 导航条定宽：中英切换时链接区长度不变，整条导航不左右跑 */
+@media (min-width:901px){.nav-links{width:340px;justify-content:space-evenly;gap:0}}
 .nav-links a{position:relative;padding:4px 0;transition:color .16s ease}
 .nav-links a:hover{color:var(--blue)}
 .nav-links a::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1.5px;
   background:var(--blue);transition:right .22s cubic-bezier(.22,.7,.3,1)}
 .nav-links a:hover::after{right:0}
 .nav-actions{display:flex;align-items:center;gap:12px;margin-left:20px}
+/* 右侧操作区定宽：中英切换时“下载/Download”变宽不会把导航链接推着跑 */
+@media (min-width:901px){.nav-actions{width:300px;justify-content:flex-end}}
 .lang{display:flex;align-items:center;justify-content:center;gap:2px;
-  width:168px;border:1px solid var(--line);border-radius:999px;
-  padding:3px;background:#fff;font-size:12.5px;box-shadow:var(--shadow-s)}
+  width:176px;height:38px;border:1px solid var(--line);border-radius:14px;
+  padding:3px;background:#fff;font-size:12.8px;box-shadow:var(--shadow-s)}
 /* 当前语言展开全称：简 → 简 简体中文，外框定宽，导航不会被推着走 */
-.lang a{display:inline-flex;align-items:center;justify-content:center;height:24px;
-  padding:0 7px;border-radius:999px;color:var(--muted);transition:.16s ease;line-height:1;white-space:nowrap}
+.lang a{display:inline-flex;align-items:center;justify-content:center;height:30px;
+  padding:0 9px;border-radius:10px;color:var(--muted);transition:.16s ease;line-height:1;white-space:nowrap}
 .lang a .full{display:grid;grid-template-columns:0fr;padding-left:0;
   transition:grid-template-columns .3s cubic-bezier(.22,1,.36,1),padding-left .3s cubic-bezier(.22,1,.36,1)}
 .lang a .full > span{overflow:hidden;white-space:nowrap;opacity:0;transition:opacity .16s .06s}
@@ -244,8 +248,8 @@ pre .c{color:#7f93ad}
   .wrap{width:calc(100% - 32px)}
   .nav-in{gap:12px}
   .nav-dl{display:none}
-  .lang{width:152px;padding:3px;font-size:12px;gap:1px}
-  .lang a{height:26px;padding:0 6px}
+  .lang{width:146px;height:34px;padding:2px;font-size:11.2px;gap:1px;border-radius:10px}
+  .lang a{height:28px;padding:0 6px;border-radius:8px}
   .lang a.on{padding:0 8px}
   .lang a.on .full{padding-left:4px}
   h1{font-size:clamp(32px,8.4vw,40px)}
